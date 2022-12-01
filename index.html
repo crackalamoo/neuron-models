@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Neurons</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" >
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<link rel="stylesheet" href="http://harysdalvi.com/main.css">
+<script type="text/javascript"
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+<!-- <base href="http://harysdalvi.com/sub/projects/neurons/"> -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YPKKGJ4J3K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-YPKKGJ4J3K');
+</script>
+</head>
+
+<body>
+<div class="main">
+
+<h1 class="title">Neurons</h1>
+<h3 class="author"><a href="http://harysdalvi.com">Harys Dalvi</a></h3>
+<h3 class="date">November 2022</h3><br>
+
+
+
+<h2>Visualization</h2>
+<canvas id="artificial"></canvas>
+<canvas id="biological"></canvas>
+
+
+<div id="footer"></div>
+<script src="http://harysdalvi.com/services.js"></script>
+<!-- <script src="http://harysdalvi.com/sub/projects/neurons/main.js"></script> -->
+<script src="main.js"></script>
+<script>
+const DARK = darkTheme();
+
+function whenResize() {
+  canvas1.width = window.innerWidth*0.8*SCALE;
+  canvas1.height = window.innerWidth*0.5*SCALE;
+  canvas1.style.width = ''+(window.innerWidth*0.8)+"px";
+  canvas1.style.height = ''+(window.innerWidth*0.5)+"px";
+  canvas2.width = window.innerWidth*0.8*SCALE;
+  canvas2.height = window.innerWidth*0.5*SCALE;
+  canvas2.style.width = ''+(window.innerWidth*0.8)+"px";
+  canvas2.style.height = ''+(window.innerWidth*0.5)+"px";
+  drawDiagram();
+}
+whenResize();
+window.addEventListener("resize", whenResize);
+setInterval(drawDiagram, 20);
+
+setAnchors();
+</script>
+
+</body>
+</html>
