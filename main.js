@@ -2,6 +2,7 @@ const SCALE = 4.0
 var canvas1 = document.getElementById("biological");
 var canvas2 = document.getElementById("artificial");
 
+// https://github.com/cazala/mnist
 
 function colormap(x, min, max) {
     let val = Math.min(Math.max(x, min), max);
@@ -23,12 +24,12 @@ function colormap2(x, min, mid, max) {
     return '#0000' + (blue_v < 16 ? '0' : '') + blue_v.toString(16);
 }
 
-const DRAW_RADIUS = 0.02;
+const DRAW_RADIUS = 0.01;
 const DRAW_GAP = 0.005;
 const DRAW_AXON = 0.02;
 const DRAW_LIGHTNING = 0.005;
 class Neuron {
-    constructor(arr, time, time2, x, y, func) {
+    constructor(arr, time, time2, x, y, func, radius=DRAW_RADIUS, drawAxon=true) {
         this.func = func; // activation function
         this.value = 0;
         this.synapses = []; // dendrites only
@@ -39,6 +40,8 @@ class Neuron {
         this.x = x;
         this.y = y;
         this.conducting = false; // used only for animation
+        this.radius = radius; // used only for drawing
+        this.drawAxon = drawAxon;
         arr.push(this);
     }
 
@@ -50,34 +53,36 @@ class Neuron {
         ctx.fillStyle = colormap2(this.value, -1, 0, 1);
         ctx.lineWidth = 10.0/Math.sqrt(this.time);
         ctx.beginPath();
-        ctx.arc(this.x * width, this.y * height, DRAW_RADIUS * width, 0, 2*Math.PI);
+        ctx.arc(this.x * width, this.y * height, this.radius * width, 0, 2*Math.PI);
         ctx.fill();
-        for (var i = 0; i < this.synapses.length; i++) {
-            let upstream = this.synapses[i].neuron;
-            ctx.strokeStyle = colormap2(this.synapses[i].strength, -1, 0, 1);
-            ctx.beginPath();
-            ctx.moveTo((upstream.x + DRAW_RADIUS) * width, upstream.y * height);
-            ctx.lineTo((upstream.x + DRAW_RADIUS + DRAW_AXON) * width, upstream.y * height);
-            ctx.lineTo((this.x - DRAW_RADIUS - DRAW_GAP) * width, this.y * height);
-            ctx.stroke();
-        }
-        if (this.conducting) {
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = "#FFFF00";
+        if (this.drawAxon) {
             for (var i = 0; i < this.synapses.length; i++) {
                 let upstream = this.synapses[i].neuron;
-                var lightningX = upstream.x + DRAW_RADIUS;
-                var lightningY = upstream.y;
+                ctx.strokeStyle = colormap2(this.synapses[i].strength, -1, 0, 1);
                 ctx.beginPath();
-                ctx.moveTo(lightningX * width, lightningY * height);
-                while (lightningX < this.x - DRAW_RADIUS - DRAW_GAP - Math.max((upstream.conduction)/(upstream.time)*(this.x - upstream.x - 2*DRAW_RADIUS - DRAW_GAP), 0)) {
-                    lightningX += DRAW_LIGHTNING;
-                    if (lightningX > upstream.x + DRAW_RADIUS + DRAW_AXON)
-                        lightningY += (this.y - upstream.y)/(this.x - DRAW_RADIUS - DRAW_GAP - upstream.x)*DRAW_LIGHTNING;
-                    ctx.lineTo(lightningX * width, (lightningY + 0.02*Math.random() - 0.01) * height);
-                }
+                ctx.moveTo((upstream.x + this.radius) * width, upstream.y * height);
+                ctx.lineTo((upstream.x + this.radius + DRAW_AXON) * width, upstream.y * height);
+                ctx.lineTo((this.x - this.radius - DRAW_GAP) * width, this.y * height);
                 ctx.stroke();
-            
+            }
+            if (this.conducting) {
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#FFFF00";
+                for (var i = 0; i < this.synapses.length; i++) {
+                    let upstream = this.synapses[i].neuron;
+                    var lightningX = upstream.x + this.radius;
+                    var lightningY = upstream.y;
+                    ctx.beginPath();
+                    ctx.moveTo(lightningX * width, lightningY * height);
+                    while (lightningX < this.x - this.radius - DRAW_GAP - Math.max((upstream.conduction)/(upstream.time)*(this.x - upstream.x - 2*this.radius - DRAW_GAP), 0)) {
+                        lightningX += DRAW_LIGHTNING;
+                        if (lightningX > upstream.x + this.radius + DRAW_AXON)
+                            lightningY += (this.y - upstream.y)/(this.x - this.radius - DRAW_GAP - upstream.x)*DRAW_LIGHTNING;
+                        ctx.lineTo(lightningX * width, (lightningY + 0.02*Math.random() - 0.01) * height);
+                    }
+                    ctx.stroke();
+                
+                }
             }
         }
     }
@@ -94,8 +99,8 @@ function sigmoid_derivative(y) {
 }
 
 class ArtNeuron extends Neuron {
-    constructor(x, y) {
-        super(art_neurons, 1, 0, x, y, sigmoid);
+    constructor(x, y, radius, drawAxon) {
+        super(art_neurons, 1, 0, x, y, sigmoid, radius, drawAxon);
     }
 
     turn() {
@@ -136,10 +141,12 @@ class BioNeuron extends Neuron {
 }
 
 var layers = [];
-function makeLayer(num_neurons, x, previous) {
+function makeLayer(num_neurons, get_x, get_y, previous, rad=DRAW_RADIUS, drawAxon=true) {
     var new_layer = [];
     for (var i = 0; i < num_neurons; i++) {
-        let neuron = new ArtNeuron(x + Math.floor(i/20)*0.02 - 0.05, ((i%20)+0.5)/Math.min(num_neurons, 20));
+        let x = get_x(i);
+        let y = get_y(i);
+        let neuron = new ArtNeuron(x, y, rad, drawAxon);
         new_layer.push(neuron);
     }
     if (previous != null) {
@@ -153,10 +160,16 @@ function makeLayer(num_neurons, x, previous) {
     return new_layer;
 }
 const LAYERS = 5;
-var lastLayer = makeLayer(128, 0.5/LAYERS, null);
-lastLayer = makeLayer(20, 1.5/LAYERS, lastLayer);
-for (var i = 0; i < LAYERS-2; i++) {
-    lastLayer = makeLayer(10, (i+2.5)/LAYERS, lastLayer);
+var lastLayer = makeLayer(28*28,
+    (i => 0.5/LAYERS + Math.floor(i/28)*0.01*5/8 - 0.05),
+    (i => ((i%28)*0.01) + 0.36), null, 0.005);
+lastLayer = makeLayer(20,
+    (i => 1.5/LAYERS),
+    (i => ((i%20)+0.5)/20), lastLayer, DRAW_RADIUS, false);
+for (let j = 0; j < LAYERS-2; j++) {
+    lastLayer = makeLayer(10,
+        (i => (j+2.5)/LAYERS),
+        (i => ((i%10)+0.5)/10), lastLayer, DRAW_RADIUS);
 }
 
 function runANNLayer(layer_num, delay, train=false) {
@@ -179,7 +192,7 @@ function runANNLayer(layer_num, delay, train=false) {
 
 function runANN() {
     for (var i = 0; i < layers[0].length; i++) {
-        layers[0][i].value = 0.1*Math.random() - 0.2;
+        layers[0][i].value = Math.random();
         layers[0][i].conduction = layers[0][i].time;
     }
     for (var i = 1; i < layers.length; i++) {

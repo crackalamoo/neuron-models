@@ -25,7 +25,7 @@
 
 <h1 class="title">Neurons</h1>
 <h3 class="author"><a href="http://harysdalvi.com">Harys Dalvi</a></h3>
-<h3 class="date">November 2022</h3><br>
+<h3 class="date">December 2022</h3><br>
 
 
 
@@ -36,7 +36,13 @@
 
 <div id="footer"></div>
 <script src="http://harysdalvi.com/services.js"></script>
-<!-- <script src="http://harysdalvi.com/sub/projects/neurons/main.js"></script> -->
+<!-- <script>
+var mnist = <%- JSON.stringify(mnist) %>;
+function getMnist(digit, index) {
+  return mnist[digit].raw.slice(index*28*28, (index+1)*28*28);
+}
+</script>
+<script src="http://harysdalvi.com/sub/projects/neurons/main.js"></script> -->
 <script src="main.js"></script>
 <script>
 const DARK = darkTheme();

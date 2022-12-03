@@ -1,22 +1,27 @@
 //Load HTTP module
 const http = require("http"),
-    fs = require("fs");
-const hostname = "127.0.0.1";
-const port = 3000;
+    //fs = require("fs"),
+    express = require("express"),
+    path = require("path"),
+    mnist = require("mnist");
+//const hostname = "127.0.0.1";
+const port = process.env.PORT || "3000";
 
-//Create HTTP server and listen on port 3000 for requests
-const server = http.createServer((req, res) => {
-  //Set the response HTTP header with HTTP status and Content type
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "text/plain");
-  res.end("Hello World\n");
-});
+var app = express();
 
-fs.readFile("./index.html", function(err, html) {
+app.engine('html', require('ejs').renderFile);
+app.get('/', function(req, res) {
+    //res.render("index.html", {mnist:mnist});
+    res.render(path.join(__dirname, "/index.html"), {title : "Hey", mnist : mnist});
+})
+
+app.listen(port);
+
+/*fs.readFile("./index.html", function(err, html) {
     if (err) throw err;
     http.createServer(function(request, response) {
         response.writeHeader(200, {"Content-Type": "text/html"});
         response.write(html);
         response.end();
     }).listen(port, hostname);
-})
+})*/
