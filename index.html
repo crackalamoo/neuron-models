@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Neurons</title>
+<title>Cold Porridge</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" >
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="utf-8">
@@ -9,7 +9,7 @@
 <script type="text/javascript"
   src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
-<!-- <base href="http://harysdalvi.com/sub/projects/neurons/"> -->
+<!-- <base href="http://harysdalvi.com/sub/projects/porridge/"> -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-YPKKGJ4J3K"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -23,26 +23,45 @@
 <body>
 <div class="main">
 
-<h1 class="title">Neurons</h1>
+<h1 class="title">Cold Porridge</h1>
 <h3 class="author"><a href="http://harysdalvi.com">Harys Dalvi</a></h3>
 <h3 class="date">December 2022</h3><br>
 
-
+<blockquote>
+  &ldquo;We are not interested in the fact that the brain has the consistency of cold porridge.&rdquo;<br>
+  &emsp; &mdash; Alan Turing
+</blockquote>
 
 <h2>Visualization</h2>
 <canvas id="artificial"></canvas>
 <canvas id="biological"></canvas>
 
 
+<h2 id="ref">References</h2>
+<ol>
+<li><a href="https://www.3blue1brown.com/lessons/backpropagation-calculus">Backpropagation calculus</a>
+  (Grant Sanderson, 3Blue1Brown) <a href="#src1">^</a></li>
+</ol>
+
+
 <div id="footer"></div>
 <script src="http://harysdalvi.com/services.js"></script>
-<!-- <script>
-var mnist = <%- JSON.stringify(mnist) %>;
+<script>
+const mnist = <%- JSON.stringify(mnist) %>; // importing MNIST library from node.js
+
 function getMnist(digit, index) {
   return mnist[digit].raw.slice(index*28*28, (index+1)*28*28);
 }
+function runMnist(digit, index) {
+  input = getMnist(digit, index);
+  runANNSample(input);
+}
+function fastMnist(digit, index) {
+  var input = getMnist(digit, index);
+  var batch = [[input, digitOutput(digit)]];
+  trainMiniBatch(batch);
+}
 </script>
-<script src="http://harysdalvi.com/sub/projects/neurons/main.js"></script> -->
 <script src="main.js"></script>
 <script>
 const DARK = darkTheme();
@@ -63,6 +82,21 @@ window.addEventListener("resize", whenResize);
 setInterval(drawDiagram, 20);
 
 setAnchors();
+
+const SAMPLES = 863; // 863
+for (var e = 0; e < 1; e++) {
+  for (var i = 0; i < SAMPLES; i++) {
+    let batch = [];
+    for (var j = 0; j <= 9; j++)
+      batch.push([getMnist(j, i), digitOutput(j)]);
+    trainMiniBatch(batch);
+  }
+}
+
+//runMnist(0, 0);
+//runMnist(1, 0);
+
+//fastMnist(0, 0);
 </script>
 
 </body>

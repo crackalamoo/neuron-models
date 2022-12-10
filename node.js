@@ -10,6 +10,7 @@ const port = process.env.PORT || "3000";
 var app = express();
 
 app.engine('html', require('ejs').renderFile);
+app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', function(req, res) {
     //res.render("index.html", {mnist:mnist});
     res.render(path.join(__dirname, "/index.html"), {title : "Hey", mnist : mnist});

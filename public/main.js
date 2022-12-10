@@ -90,17 +90,22 @@ class Neuron {
 }
 
 var art_neurons = [];
-function sigmoid(x) {
-    return 1.0/(1 + Math.exp(-x));
+function relu(x) {
+    //return 1.0/(1 + Math.exp(-x));
+    return Math.max(x, 0);
 }
-function sigmoid_derivative(y) {
-    return y * (1-y);
-    //return Math.exp(-x) * Math.pow(1 + Math.exp(-x), -2);
+function relu_deriv(y) {
+    if (y > 0)
+        return 1;
+    return 0;
 }
 
 class ArtNeuron extends Neuron {
-    constructor(x, y, radius, drawAxon) {
-        super(art_neurons, 1, 0, x, y, sigmoid, radius, drawAxon);
+    constructor(x, y, layer, index, radius, drawAxon) {
+        super(art_neurons, 1, 0, x, y, relu, radius, drawAxon);
+        this.layer = layer;
+        this.index = index;
+        this.deriv = relu_deriv;
     }
 
     turn() {
@@ -146,7 +151,7 @@ function makeLayer(num_neurons, get_x, get_y, previous, rad=DRAW_RADIUS, drawAxo
     for (var i = 0; i < num_neurons; i++) {
         let x = get_x(i);
         let y = get_y(i);
-        let neuron = new ArtNeuron(x, y, rad, drawAxon);
+        let neuron = new ArtNeuron(x, y, new_layer, i, rad, drawAxon);
         new_layer.push(neuron);
     }
     if (previous != null) {
@@ -161,8 +166,8 @@ function makeLayer(num_neurons, get_x, get_y, previous, rad=DRAW_RADIUS, drawAxo
 }
 const LAYERS = 5;
 var lastLayer = makeLayer(28*28,
-    (i => 0.5/LAYERS + Math.floor(i/28)*0.01*5/8 - 0.05),
-    (i => ((i%28)*0.01) + 0.36), null, 0.005);
+    (i => 0.5/LAYERS + (i%28)*0.01*5/8 - 0.05),
+    (i => Math.floor(i/28)*0.01 + 0.36), null, 0.005);
 lastLayer = makeLayer(20,
     (i => 1.5/LAYERS),
     (i => ((i%20)+0.5)/20), lastLayer, DRAW_RADIUS, false);
@@ -172,27 +177,141 @@ for (let j = 0; j < LAYERS-2; j++) {
         (i => ((i%10)+0.5)/10), lastLayer, DRAW_RADIUS);
 }
 
-function runANNLayer(layer_num, delay, train=false) {
+function softmaxLastLayer() {
+    var sum = 0;
+    for (let i = 0; i < layers[layers.length-1].length; i++) {
+        sum += layers[layers.length-1][i].value;
+    }
+    for (let i = 0; i < layers[layers.length-1].length; i++) {
+        layers[layers.length-1][i].value /= sum;
+    }
+}
+for (var i = 0; i < layers[layers.length-1].length; i++) {
+    layers[layers.length-1][i].func = (x => Math.exp(x)); // exponential for softmax
+    layers[layers.length-1][i].deriv = (x => x);
+}
+
+function runANNLayer(layer_num, delay) {
     console.log(layer_num);
     for (let j = 0; j < layers[layer_num].length; j++) {
         layers[layer_num][j].conducting = true;
-        //layers[layer_num][j].turn();
         window.setTimeout(function() {
             layers[layer_num][j].turn();
             layers[layer_num][j].conducting = false;
         }, delay);
     }
-    if (train) {
+    if (layer_num == layers.length - 1) {
         window.setTimeout(function() {
-            updateWeights(backPropagate([1,0,0,0,0,0,0,0,0,0]), 2.0);
-        }, delay * 2);
-        
+            softmaxLastLayer();
+        }, delay+1);
     }
 }
 
-function runANN() {
+function ANNPredict(input) {
     for (var i = 0; i < layers[0].length; i++) {
-        layers[0][i].value = Math.random();
+        layers[0][i].value = input[i];
+        layers[0][i].conduction = 1;
+    }
+    for (var i = 1; i < layers.length; i++) {
+        for (var j = 0; j < layers[i].length; j++)
+            layers[i][j].reset();
+    }
+    for (let i = 1; i < layers.length-1; i++) {
+        for (let j = 0; j < layers[i].length; j++)
+            layers[i][j].turn();
+    }
+    for (let j = 0; j < layers[layers.length - 1].length; j++)
+        layers[layers.length-1][j].turn();
+    softmaxLastLayer();
+    var output = [];
+    for (let j = 0; j < layers[layers.length-1].length; j++)
+        output.push(layers[layers.length-1][j].value);
+    return output;
+}
+
+var LEARNING_RATE = 0.01;
+
+function loss_f(output, prediction) {
+    //if (output == 0)
+    //    return Math.log(Math.max(0.3, 1 - prediction));
+    //return Math.log(Math.max(0.3, prediction));
+    return Math.power(prediction - output, 2);
+}
+
+function loss_f_deriv(output, prediction) {
+    //if (output == 0)
+    //    return -1 / (1 - prediction);
+    //return 1 / prediction;
+    return 2 * (prediction - output);
+}
+
+// multiply two matrices stored as arrays
+function matrix_multiply(a, b) {
+    var result = [];
+    for (var i = 0; i < a.length; i++) {
+        result.push([]);
+        for (var j = 0; j < b[0].length; j++) {
+            result[i].push(0);
+            for (var k = 0; k < a[0].length; k++) {
+                result[i][j] += a[i][k] * b[k][j];
+            }
+        }
+    }
+    return result;
+}
+
+function backPropagate(output, prediction) {
+    var grad = []; // derivative of loss function with respect to activation of each neuron (not weights and biases)
+    for (var i = 0; i < layers.length; i++) {
+        grad.push([]);
+        for (var j = 0; j < layers[i].length; j++) {
+            grad[i].push(0);
+        }
+    }
+
+    for (var i = layers.length - 1; i > 0; i--) {
+        for (var j = 0; j < layers[i].length; j++) {
+            if (i == layers.length - 1) {
+                grad[i][j] = loss_f_deriv(output[j], prediction[j]);
+            } else {
+                var sum = 0;
+                for (var k = 0; k < layers[i+1].length; k++) {
+                    sum += grad[i+1][k] * layers[i+1][k].synapses[j].strength;
+                }
+                grad[i][j] = sum * layers[i][j].deriv(layers[i][j].value);
+            }
+        }
+    }
+
+    return grad;
+}
+
+function trainMiniBatch(batch) {
+    for (var b = 0; b < batch.length; b++) {
+        var input = batch[b][0];
+        var output = batch[b][1];
+        var prediction = ANNPredict(input);
+        var grad = backPropagate(output, prediction);
+        for (var i = 1; i < layers.length; i++) {
+            for (var j = 0; j < layers[i].length; j++) {
+                layers[i][j].bias -= LEARNING_RATE * grad[i][j];
+                for (var k = 0; k < layers[i][j].synapses.length; k++) {
+                    layers[i][j].synapses[k].strength -= LEARNING_RATE * grad[i][j] * layers[i-1][k].deriv(layers[i-1][k].value);
+                }
+            }
+        }
+    }
+}
+
+function digitOutput(digit) {
+    var output = [0,0,0,0,0,0,0,0,0,0];
+    output[digit] = 1;
+    return output;
+}
+
+function runANNSample(input) {
+    for (var i = 0; i < layers[0].length; i++) {
+        layers[0][i].value = input[i];
         layers[0][i].conduction = layers[0][i].time;
     }
     for (var i = 1; i < layers.length; i++) {
@@ -200,48 +319,17 @@ function runANN() {
             layers[i][j].reset();
     }
     for (let i = 1; i < layers.length; i++) {
-        window.setTimeout(function() { runANNLayer(i, 2000, (i==layers.length-1)); }, (i-0.5) * 3000);
+        window.setTimeout(function() { runANNLayer(i, 1000); }, (i-0.5) * 1500);
     }
 }
 
-// https://machinelearningmastery.com/implement-backpropagation-algorithm-scratch-python/
-function backPropagate(train_y) {
-    var delta = {};
-    for (var i = layers.length-1; i >= 1; i--) {
-        let layer = layers[i];
-        var errors = [];
-        if (i == layers.length-1) {
-            for (var j = 0; j < layer.length; j++)
-                errors.push(layer[j].value - train_y[j])
-        } else {
-            for (var j = 0; j < layer.length; j++) {
-                var error = 0;
-                for (var k = 0; k < layers[i+1].length; k++)
-                    error += layers[i+1][k].synapses[j].strength * delta[i+1][k];
-                errors.push(error);
-            }
-        }
-        var new_deltas = [];
-        for (var j = 0; j < layer.length; j++) {
-            new_deltas.push(errors[j] * sigmoid_derivative(layer[j].value))
-        }
-        delta[i] = new_deltas;
-    }
-    return delta;
-}
 
-function updateWeights(delta, l_rate) {
-    for (var i = 1; i < layers.length; i++) {
-        var inputs = [];
-        for (var j = 0; j < layers[i-1].length; j++)
-            inputs.push(layers[i-1][j].value);
-        for (var j = 0; j < layers[i].length; j++) {
-            for (var k = 0; k < inputs.length; k++)
-                layers[i][j].synapses[k].strength -= l_rate * delta[i][j] * inputs[j];
-            layers[i][j].bias -= l_rate * delta[i][j];
-        }
-    }
-    console.log("Trained");
+
+function runANN() {
+    input = [];
+    for (var i = 0; i < 28*28; i++)
+        input.push(Math.random());
+    runANNSample(input, [1,0,1,0,1,0,1,0,1,0]);
 }
 
 function drawDiagram() {
@@ -253,5 +341,12 @@ function drawDiagram() {
     ctx.fillRect(0, 0, canvas2.width, canvas2.height);
     for (var i = 0; i < art_neurons.length; i++) {
         art_neurons[i].draw(ctx, canvas2.width, canvas2.height);
+    }
+    ctx.font = ''+Math.round(canvas2.width*0.02)+"px Arial";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#FFFFFF";
+    for (var i = 0; i < 10; i++) {
+        ctx.fillText(i, 0.9 * canvas2.width, (0.05 + i * 0.1) * canvas2.height);
     }
 }
