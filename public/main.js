@@ -3,6 +3,10 @@ var canvas1 = document.getElementById("biological");
 var canvas2 = document.getElementById("artificial");
 
 // https://github.com/cazala/mnist
+// https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4811948/
+// The Brain Learns in Unexpected Ways - Scientific American
+// https://www.nature.com/articles/nrn2575
+// https://www.ncbi.nlm.nih.gov/books/NBK2532/
 
 function colormap(x, min, max) {
     let val = Math.min(Math.max(x, min), max);
@@ -32,7 +36,7 @@ class Neuron {
     constructor(arr, time, time2, x, y, func, radius=DRAW_RADIUS, drawAxon=true) {
         this.func = func; // activation function
         this.value = 0;
-        this.synapses = []; // dendrites only
+        this.synapses = []; // dendrites for ANN, axons for biological
         this.bias = 0;
         this.time = time; // time for action potential to reach synapse
         this.conduction = time; // position of action potential along synapse
@@ -43,10 +47,6 @@ class Neuron {
         this.radius = radius; // used only for drawing
         this.drawAxon = drawAxon;
         arr.push(this);
-    }
-
-    connect(neuron, strength) {
-        this.synapses.push({"neuron": neuron, "strength": strength});
     }
 
     draw(ctx, width, height) {
@@ -108,6 +108,10 @@ class ArtNeuron extends Neuron {
         this.deriv = relu_deriv;
     }
 
+    connect(neuron, strength) {
+        this.synapses.push({"neuron": neuron, "strength": strength});
+    }
+
     turn() {
         let input = 0;
         for (var i = 0; i < this.synapses.length; i++) {
@@ -134,6 +138,11 @@ function membrane_func(x) {
     return 0;
 }
 
+const EC_NA = 140; // mM
+const EC_K = 5;
+const EC_CL = 120;
+const EC_CA = 2;
+
 class BioNeuron extends Neuron {
     constructor(x, y) {
         super(bio_neurons, 5, 3, x, y, membrane_func);
@@ -142,6 +151,21 @@ class BioNeuron extends Neuron {
         // max speed: 150 m/s (1 tick conduction)
         // min speed: 30 m/s (5 tick diffusion)
         // https://www.physiologyweb.com/calculators/diffusion_time_calculator.html
+
+        this.value = -70;
+        this.na = 15;
+        this.k = 150;
+        this.cl = 5;
+        this.ca = 0;
+
+        this.glutamate = 0;
+        this.gaba = 0;
+
+        this.receptors = []; // is this the best model? should this be synapse-specific?
+    }
+
+    connect(neuron) {
+        this.synapses.push({"neuron": neuron, "calcium": 0, "reuptake": 1});
     }
 }
 
@@ -171,9 +195,12 @@ var lastLayer = makeLayer(28*28,
 lastLayer = makeLayer(20,
     (i => 1.5/LAYERS),
     (i => ((i%20)+0.5)/20), lastLayer, DRAW_RADIUS, false);
-for (let j = 0; j < LAYERS-2; j++) {
+lastLayer = makeLayer(16,
+    (i => 2.5/LAYERS),
+    (i => ((i%16)+0.5)/16), lastLayer, DRAW_RADIUS);
+for (let j = 0; j < LAYERS-3; j++) {
     lastLayer = makeLayer(10,
-        (i => (j+2.5)/LAYERS),
+        (i => (j+3.5)/LAYERS),
         (i => ((i%10)+0.5)/10), lastLayer, DRAW_RADIUS);
 }
 
@@ -229,19 +256,14 @@ function ANNPredict(input) {
     return output;
 }
 
-var LEARNING_RATE = 0.01;
+const LEARNING_RATE = 0.01;
+var checkANNOutput = 0;
 
 function loss_f(output, prediction) {
-    //if (output == 0)
-    //    return Math.log(Math.max(0.3, 1 - prediction));
-    //return Math.log(Math.max(0.3, prediction));
     return Math.power(prediction - output, 2);
 }
 
 function loss_f_deriv(output, prediction) {
-    //if (output == 0)
-    //    return -1 / (1 - prediction);
-    //return 1 / prediction;
     return 2 * (prediction - output);
 }
 
@@ -341,6 +363,21 @@ function drawDiagram() {
     ctx.fillRect(0, 0, canvas2.width, canvas2.height);
     for (var i = 0; i < art_neurons.length; i++) {
         art_neurons[i].draw(ctx, canvas2.width, canvas2.height);
+    }
+    var maxDigit = 0;
+    var outputSum = 0;
+    for (var i = 0; i < layers[layers.length-1].length; i++) {
+        outputSum += layers[layers.length-1][i].value;
+        if (layers[layers.length-1][i].value > layers[layers.length-1][maxDigit].value)
+            maxDigit = i;
+    }
+    if (outputSum > 0) {
+        ctx.strokeStyle = "#FF0000";
+        if (maxDigit == checkANNOutput)
+            ctx.strokeStyle = "#00FF00";
+        ctx.beginPath();
+        ctx.arc(0.9 * canvas2.width, (0.05 + maxDigit * 0.1) * canvas2.height, canvas2.width*0.02, 0, 2*Math.PI);
+        ctx.stroke();
     }
     ctx.font = ''+Math.round(canvas2.width*0.02)+"px Arial";
     ctx.textBaseline = "middle";

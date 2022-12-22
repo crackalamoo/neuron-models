@@ -54,11 +54,13 @@ function getMnist(digit, index) {
 }
 function runMnist(digit, index) {
   input = getMnist(digit, index);
+  checkANNOutput = digit;
   runANNSample(input);
 }
 function fastMnist(digit, index) {
   var input = getMnist(digit, index);
   var batch = [[input, digitOutput(digit)]];
+  checkANNOutput = digit;
   trainMiniBatch(batch);
 }
 </script>
@@ -83,20 +85,25 @@ setInterval(drawDiagram, 20);
 
 setAnchors();
 
-const SAMPLES = 863; // 863
-for (var e = 0; e < 1; e++) {
+const SAMPLES = 850; // max 863
+
+function runEpoch() {
   for (var i = 0; i < SAMPLES; i++) {
     let batch = [];
     for (var j = 0; j <= 9; j++)
       batch.push([getMnist(j, i), digitOutput(j)]);
     trainMiniBatch(batch);
   }
+  for (var i = 0; i < art_neurons.length; i++)
+    art_neurons[i].reset();
 }
 
-//runMnist(0, 0);
-//runMnist(1, 0);
-
-//fastMnist(0, 0);
+function randomMnist(digit=null) {
+  if (digit == null)
+    digit = Math.floor(Math.random()*10);
+  var index = SAMPLES + Math.floor(Math.random()*(mnist[digit].length - SAMPLES));
+  runMnist(digit, index);
+}
 </script>
 
 </body>
