@@ -33,13 +33,12 @@ const DRAW_GAP = 0.005;
 const DRAW_AXON = 0.02;
 const DRAW_LIGHTNING = 0.005;
 class Neuron {
-    constructor(arr, time, time2, x, y, radius=DRAW_RADIUS, drawAxon=true) {
+    constructor(arr, time, x, y, radius=DRAW_RADIUS, drawAxon=true) {
         this.value = 0;
-        this.synapses = []; // dendrites for ANN, axons for biological
+        this.synapses = []; // dendrites
         this.bias = 0;
         this.time = time; // time for action potential to reach synapse
         this.conduction = time; // position of action potential along synapse
-        this.diffusion = time2; // time for neurotransmitters to diffuse across synapse
         this.x = x;
         this.y = y;
         this.conducting = false;
@@ -54,9 +53,30 @@ function sigmoid(x, a, b) {
     return 1.0/(1 + Math.exp(-a*(x-b)));
 }
 
+function drawLightning(ctx, width, height, x0, y0, x1, y1, newLine=true) {
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#FFFF00";
+    var x = x0;
+    var y = y0;
+    if (newLine) {
+        ctx.beginPath();
+        ctx.moveTo(x * width, y * height);
+    }
+    let distance = Math.sqrt(Math.pow(y1-y0,2) + Math.pow(x1-x0,2));
+    let iterations = Math.floor(distance / DRAW_LIGHTNING);
+    let iterX = (x1-x0)/distance;
+    let iterY = (y1-y0)/distance;
+    for (var i = 0; i < iterations; i++) {
+        x += DRAW_LIGHTNING * iterX;
+        y += DRAW_LIGHTNING * iterY;
+        let offset = 0.02*Math.random() - 0.01;
+        ctx.lineTo((x - offset*iterY) * width, (y + offset*iterX) * height);
+    }
+    ctx.stroke();
+}
+
 var art_neurons = [];
 function relu(x) {
-    //return 1.0/(1 + Math.exp(-x));
     return Math.max(x, 0);
 }
 function relu_deriv(y) {
@@ -67,7 +87,7 @@ function relu_deriv(y) {
 
 class ArtNeuron extends Neuron {
     constructor(x, y, layer, index, radius, drawAxon) {
-        super(art_neurons, 1, 0, x, y, radius, drawAxon);
+        super(art_neurons, 1, x, y, radius, drawAxon);
         this.func = relu;
         this.layer = layer;
         this.index = index;
@@ -105,28 +125,18 @@ class ArtNeuron extends Neuron {
                 let upstream = this.synapses[i].neuron;
                 ctx.strokeStyle = colormap2(this.synapses[i].strength, -1, 0, 1);
                 ctx.beginPath();
-                ctx.moveTo((upstream.x + this.radius) * width, upstream.y * height);
-                ctx.lineTo((upstream.x + this.radius + DRAW_AXON) * width, upstream.y * height);
+                ctx.moveTo((upstream.x + upstream.radius) * width, upstream.y * height);
+                ctx.lineTo((upstream.x + upstream.radius + DRAW_AXON) * width, upstream.y * height);
                 ctx.lineTo((this.x - this.radius - DRAW_GAP) * width, this.y * height);
                 ctx.stroke();
             }
             if (this.conducting) {
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = "#FFFF00";
                 for (var i = 0; i < this.synapses.length; i++) {
                     let upstream = this.synapses[i].neuron;
-                    var lightningX = upstream.x + this.radius;
-                    var lightningY = upstream.y;
-                    ctx.beginPath();
-                    ctx.moveTo(lightningX * width, lightningY * height);
-                    while (lightningX < this.x - this.radius - DRAW_GAP - Math.max((upstream.conduction)/(upstream.time)*(this.x - upstream.x - 2*this.radius - DRAW_GAP), 0)) {
-                        lightningX += DRAW_LIGHTNING;
-                        if (lightningX > upstream.x + this.radius + DRAW_AXON)
-                            lightningY += (this.y - upstream.y)/(this.x - this.radius - DRAW_GAP - upstream.x)*DRAW_LIGHTNING;
-                        ctx.lineTo(lightningX * width, (lightningY + 0.02*Math.random() - 0.01) * height);
-                    }
-                    ctx.stroke();
-                
+                    drawLightning(ctx, width, height,
+                        upstream.x + upstream.radius, upstream.y,  upstream.x + upstream.radius + DRAW_AXON, upstream.y);
+                    drawLightning(ctx, width, height,
+                        upstream.x + upstream.radius + DRAW_AXON, upstream.y,  this.x - this.radius - DRAW_GAP, this.y,  false);
                 }
             }
         }
@@ -183,7 +193,6 @@ for (var i = 0; i < layers[layers.length-1].length; i++) {
 }
 
 function runANNLayer(layer_num, delay) {
-    console.log(layer_num);
     for (let j = 0; j < layers[layer_num].length; j++) {
         layers[layer_num][j].conducting = true;
         window.setTimeout(function() {
@@ -229,21 +238,6 @@ function loss_f(output, prediction) {
 
 function loss_f_deriv(output, prediction) {
     return 2 * (prediction - output);
-}
-
-// multiply two matrices stored as arrays
-function matrix_multiply(a, b) {
-    var result = [];
-    for (var i = 0; i < a.length; i++) {
-        result.push([]);
-        for (var j = 0; j < b[0].length; j++) {
-            result[i].push(0);
-            for (var k = 0; k < a[0].length; k++) {
-                result[i][j] += a[i][k] * b[k][j];
-            }
-        }
-    }
-    return result;
 }
 
 function backPropagate(output, prediction) {
@@ -298,7 +292,7 @@ function digitOutput(digit) {
 function runANNSample(input) {
     for (var i = 0; i < layers[0].length; i++) {
         layers[0][i].value = input[i];
-        layers[0][i].conduction = layers[0][i].time;
+        layers[0][i].conduction = 1;
     }
     for (var i = 1; i < layers.length; i++) {
         for (var j = 0; j < layers[i].length; j++)
@@ -320,12 +314,12 @@ var bio_neurons = [];
 
 // functions to determine how many channels to open
 
-// voltage-gated channels in the soma
+// voltage-gated ion channels of the soma
 function naChannel(neuron) {
     let voltage = neuron.value;
     // Na channels must be allowed to close at peak voltage and not reopen until voltage is below -65 mV
     if (voltage < -65 || neuron.channels["na"][1] > 0) {
-        let setPoint = sigmoid(voltage, 0.5, -50.5); // values chosen so that threshold will be near -55 mV
+        let setPoint = sigmoid(voltage, 0.8, -50.5); // values chosen so that threshold will be near -55 mV
         if (neuron.value > 30)
             neuron.channels["na"][1] = 0;
         else
@@ -339,24 +333,24 @@ function kChannel(neuron) {
     neuron.channels["k"][1] += 0.1 * (neuron.channels["k"][0] * setPoint - neuron.channels["k"][1]);
 }
 
-// ligand-gated channels
+// ligand-gated ion channels of the synapse
 function ampa_open(synapse) {
     let glutamate = synapse.pre.glutamate * (1 - synapse.reuptake);
-    let ampa_open_n =  synapse.receptors.ampa[0] * sigmoid(glutamate, 8, 0.5);
-    synapse.receptors.ampa[1] = Math.floor(ampa_open_n);
+    let ampa_open_n =  synapse.receptors.ampa[0] * sigmoid(glutamate, 10, 0.5);
+    synapse.receptors.ampa[1] = ampa_open_n;
 }
 
 function nmda_open(synapse) {
     let glutamate = synapse.pre.glutamate * (1 - synapse.reuptake);
     let mg_block = sigmoid(synapse.post.value, 0.3, -60);
-    let nmda_open_n = synapse.receptors.nmda[0] * mg_block * sigmoid(glutamate, 8, 0.5);
-    synapse.receptors.nmda[1] = Math.floor(nmda_open_n);
+    let nmda_open_n = synapse.receptors.nmda[0] * mg_block * sigmoid(glutamate, 10, 0.5);
+    synapse.receptors.nmda[1] = nmda_open_n;
 }
 
 function gabaa_open(synapse) {
     let gaba = synapse.pre.gaba * (1 - synapse.reuptake);
-    let gabaa_open_n = synapse.receptors.gabaa[0] * sigmoid(gaba, 8, 0.5);
-    synapse.receptors.gabaa[1] = Math.floor(gabaa_open_n);
+    let gabaa_open_n = synapse.receptors.gabaa[0] * sigmoid(gaba, 10, 0.5);
+    synapse.receptors.gabaa[1] = gabaa_open_n;
 }
 
 // extracellular ion concentrations
@@ -370,9 +364,12 @@ const IC_K = 150;
 const IC_CL = 5;
 const IC_CA = 0;
 
+const DIFFUSION_TIME = 3;
+
 class BioNeuron extends Neuron {
-    constructor(x, y) {
-        super(bio_neurons, 5, 3, x, y);
+    constructor(x, y, glutamate=0, gaba=0) {
+        super(bio_neurons, 5, x, y);
+        this.id = bio_neurons.length - 1;
         // axon 1mm, 150 m/s for full myelination -> 6 µs conduction
         // 100 µs diffusion -> 3 ticks diffusion
         // max speed: 150 m/s (1 tick conduction)
@@ -381,50 +378,58 @@ class BioNeuron extends Neuron {
 
         this.value = -70;
 
-        // relative permeability to each ion
+        // relative permeability of each ion
         this.na = 2;
         this.k = 44;
         this.cl = 0;
         this.ca = 0;
 
-        this.glutamate = 0;
-        this.gaba = 0;
+        this.glutamate = glutamate;
+        this.gaba = gaba;
 
-        this.axons = []; // alternative lookup form for this.synapses (which records dendrites)
+        this.myelination = 0;
+
+        this.presynaptic = {}; // map from presynaptic neuron ids to index of corresponding synapse
+        this.postsynaptic = []; // list of postsynaptic neurons
 
         this.channels = {"na": [300,0], "k": [200,0]}; // relative number of total/open channels in soma, not synapses
     }
 
-    connect(neuron, ampar, nmdar, gabaar) {
-        this.synapses.push({"pre": neuron, "post": this, "calcium": 0, "reuptake": 1,
+    connect(neuron, ampar, nmdar, gabaar, setTime=false) {
+        this.presynaptic[neuron.id] = this.synapses.length;
+        neuron.postsynaptic.push(this);
+        this.synapses.push({"pre": neuron, "post": this, "ca": 0, "reuptake": 1,
             "receptors": {"ampa": [ampar,0], "nmda": [nmdar,0], "gabaa": [gabaar,0]}});
-        neuron.axons.push({"pre": neuron, "post": this, "calcium": 0, "reuptake": 1,
-            "receptors": {"ampa": [ampar,0], "nmda": [nmdar,0], "gabaa": [gabaar,0]}});
+        if (setTime) {
+            neuron.time = 150 * Math.sqrt(Math.pow(neuron.x - this.x, 2) + Math.pow(neuron.y - this.y, 2));
+        }
     }
 
     turn() {
 
-        let setNa = 0;
-        let setK = 0;
-        let setCl = 0;
-        let setCa = 0;
+        var setNa = 0;
+        var setK = 0;
+        var setCl = 0;
+        var setCa = 0;
 
         // voltage-gated ion channels
-
         naChannel(this);
-        setNa += this.channels.na[1];
+        setNa += this.channels["na"][1];
 
         kChannel(this);
-        setK += this.channels.k[1];
+        setK += this.channels["k"][1];
 
         // leak channels
         setNa += 2;
         setK += 44; // K is 22 times more permeable than Na by default
 
-        // ligand-gated ion channels
         for (var i = 0; i < this.synapses.length; i++) {
             let synapse = this.synapses[i];
 
+            // reuptake
+            synapse.reuptake += 0.4 * (1 - synapse.reuptake);
+
+            // ligand-gated ion channels
             ampa_open(synapse);
             setNa += synapse.receptors.ampa[1];
 
@@ -436,10 +441,10 @@ class BioNeuron extends Neuron {
         }
 
         // allow channels to open and close based on set points
-        this.na += 0.05 * (setNa - this.na);
-        this.k += 0.02 * (setK - this.k);
-        this.cl += 0.05 * (setCl - this.cl);
-        this.ca += 0.03 * (setCa - this.ca);
+        this.na += 0.4 * (setNa - this.na);
+        this.k += 0.08 * (setK - this.k);
+        this.cl += 0.4 * (setCl - this.cl);
+        this.ca += 0.08 * (setCa - this.ca);
 
         // membrane potential
         let top_sum = this.k*EC_K + this.na*EC_NA + this.cl*IC_CL + this.ca*EC_CA*EC_CA;
@@ -447,50 +452,100 @@ class BioNeuron extends Neuron {
         this.value = 62.0 * Math.log10(top_sum / bottom_sum);
 
         // action potential
-        if (this.value > -55 && !this.conducting) {
+        if (this.value > 0 && !this.conducting && this.channels["na"][1] > 0) {
             this.conducting = true;
         }
-        if (this.value < -55 && this.conducting) {
-            this.conducting = false;
-        }
+        if (this.conducting) {
+            if (this.conduction < this.time) {
+                this.conduction += this.myelination+1; // saltatory conduction
+            } else {
+                this.conduction++;
+            }
+            
+            if (this.conduction >= this.time + DIFFUSION_TIME + 1) {
+                // send neurotransmitters
+                for (var i = 0; i < this.postsynaptic.length; i++) {
+                    let post = this.postsynaptic[i];
+                    let index = post.presynaptic[this.id];
+                    post.synapses[index].reuptake *= 0.1;
+                }
 
-        // add code for when synapse reaches the end
+                // terminate action potential
+                this.conducting = false;
+                this.conduction = 0;
+            }
+        }
     }
 
     draw(ctx, width, height) {
-        ctx.fillStyle = colormap2(this.value, -70, -56, 0);
-        ctx.lineWidth = 10.0/Math.sqrt(this.time);
+        ctx.fillStyle = colormap2(this.value, -72, -60, 0);
         ctx.beginPath();
         ctx.arc(this.x * width, this.y * height, this.radius * width, 0, 2*Math.PI);
         ctx.fill();
+
+        if (this.drawAxon && this.postsynaptic.length > 0) {
+            let drawTo = this.postsynaptic[0];
+            let distance = Math.sqrt(Math.pow(this.x - drawTo.x, 2) + Math.pow(this.y - drawTo.y, 2));
+            let drawCos = (drawTo.x - this.x)/distance;
+            let drawSin = (drawTo.y - this.y)/distance;
+            ctx.strokeStyle = colormap2(this.glutamate - this.gaba, -1, 0, 1);
+            ctx.lineWidth = 10.0 * Math.sqrt(this.myelination + 1);
+            ctx.beginPath();
+            ctx.moveTo((this.x + this.radius*drawCos) * width, (this.y + this.radius*drawSin) * height);
+            let endAxonX = drawTo.x - drawTo.radius * (drawCos*1.4);
+            let endAxonY = drawTo.y - drawTo.radius * (drawSin*1.4);
+            ctx.lineTo(endAxonX * width, endAxonY * height);
+            ctx.stroke();
+            ctx.lineWidth = 10.0;
+            /* for (var i = 0; i < this.postsynaptic.length; i++) {
+                ctx.beginPath();
+                ctx.moveTo((upstream.x + this.radius) * width, upstream.y * height);
+                ctx.lineTo((upstream.x + this.radius + DRAW_AXON) * width, upstream.y * height);
+                ctx.lineTo((this.x - this.radius - DRAW_GAP) * width, this.y * height);
+                ctx.stroke();
+            } */
+            if (this.conducting) {
+                let conduct_pct = Math.min(1.0, this.conduction / this.time);
+                drawLightning(ctx, width, height,
+                    this.x + this.radius*drawCos, this.y + this.radius*drawSin,
+                    (this.x + this.radius*drawCos)*(1-conduct_pct) + endAxonX*conduct_pct,
+                    (this.y + this.radius*drawSin)*(1-conduct_pct) + endAxonY*conduct_pct);
+            }
+        }
     }
 }
 
-new BioNeuron(0.5, 0.5);
+new BioNeuron(0.45, 0.5);
+new BioNeuron(0.55, 0.5);
+bio_neurons[1].connect(bio_neurons[0], 5, 5, 0, true);
 
-function run_bioNeuron() {
-    bio_neurons[0].turn();
+const DEBUG_TURNS = 25;
+var debug_turns = 0;
+function run_bioNeurons() {
+    for (var i = 0; i < bio_neurons.length; i++) {
+        bio_neurons[i].turn();
+    }
+    if (debug_turns > 0) {
+        console.log(bio_neurons[0].conducting);
+        debug_turns--;
+    }
 }
 
 function setVal(val) {
     bio_neurons[0].value = val;
-    bio_neurons[0].turn();
-    console.log(bio_neurons[0].value);
+    debug_turns = DEBUG_TURNS;
 }
 
-setInterval(run_bioNeuron, 5);
+function setupPathway() {
+    bio_neurons[0].glutamate = 1;
+    bio_neurons[1].synapses[0].receptors["ampa"][0] = 10;
+}
+
+setInterval(run_bioNeurons, 40);
 
 
-function drawDiagram() {
-    var ctx = canvas1.getContext('2d');
-    ctx.fillStyle = "#444444";
-    ctx.fillRect(0, 0, canvas1.width, canvas1.height);
-    for (var i = 0; i < bio_neurons.length; i++) {
-        bio_neurons[i].draw(ctx, canvas1.width, canvas1.height);
-        //bio_neurons[i].turn();
-    }
-
-    ctx = canvas2.getContext('2d');
+function drawAnnDiagram() {
+    var ctx = canvas2.getContext('2d');
     ctx.fillStyle = "#444444";
     ctx.fillRect(0, 0, canvas2.width, canvas2.height);
     for (var i = 0; i < art_neurons.length; i++) {
@@ -517,5 +572,14 @@ function drawDiagram() {
     ctx.fillStyle = "#FFFFFF";
     for (var i = 0; i < 10; i++) {
         ctx.fillText(i, 0.9 * canvas2.width, (0.05 + i * 0.1) * canvas2.height);
+    }
+}
+
+function drawBioDiagram() {
+    var ctx = canvas1.getContext('2d');
+    ctx.fillStyle = "#444444";
+    ctx.fillRect(0, 0, canvas1.width, canvas1.height);
+    for (var i = 0; i < bio_neurons.length; i++) {
+        bio_neurons[i].draw(ctx, canvas1.width, canvas1.height);
     }
 }

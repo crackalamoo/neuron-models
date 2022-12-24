@@ -42,6 +42,9 @@
 <li><a href="https://www.3blue1brown.com/lessons/backpropagation-calculus">Backpropagation calculus</a>
   (Grant Sanderson, 3Blue1Brown) <a href="#src1">^</a></li>
 </ol>
+<ol type="A">
+<li><a href="https://github.com/cazala/mnist">MNIST digits with node.js (github/cazala)</a></li>
+</ol>
 
 
 <div id="footer"></div>
@@ -77,11 +80,12 @@ function whenResize() {
   canvas2.height = window.innerWidth*0.5*SCALE;
   canvas2.style.width = ''+(window.innerWidth*0.8)+"px";
   canvas2.style.height = ''+(window.innerWidth*0.5)+"px";
-  drawDiagram();
 }
 whenResize();
 window.addEventListener("resize", whenResize);
-setInterval(drawDiagram, 20);
+
+setInterval(drawAnnDiagram, 50);
+setInterval(drawBioDiagram, 15);
 
 setAnchors();
 
