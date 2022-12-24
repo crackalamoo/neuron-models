@@ -42,48 +42,10 @@ class Neuron {
         this.diffusion = time2; // time for neurotransmitters to diffuse across synapse
         this.x = x;
         this.y = y;
-        this.conducting = false; // used only for animation
+        this.conducting = false;
         this.radius = radius; // used only for drawing
         this.drawAxon = drawAxon;
         arr.push(this);
-    }
-
-    draw(ctx, width, height) {
-        ctx.fillStyle = colormap2(this.value, -1, 0, 1);
-        ctx.lineWidth = 10.0/Math.sqrt(this.time);
-        ctx.beginPath();
-        ctx.arc(this.x * width, this.y * height, this.radius * width, 0, 2*Math.PI);
-        ctx.fill();
-        if (this.drawAxon) {
-            for (var i = 0; i < this.synapses.length; i++) {
-                let upstream = this.synapses[i].neuron;
-                ctx.strokeStyle = colormap2(this.synapses[i].strength, -1, 0, 1);
-                ctx.beginPath();
-                ctx.moveTo((upstream.x + this.radius) * width, upstream.y * height);
-                ctx.lineTo((upstream.x + this.radius + DRAW_AXON) * width, upstream.y * height);
-                ctx.lineTo((this.x - this.radius - DRAW_GAP) * width, this.y * height);
-                ctx.stroke();
-            }
-            if (this.conducting) {
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = "#FFFF00";
-                for (var i = 0; i < this.synapses.length; i++) {
-                    let upstream = this.synapses[i].neuron;
-                    var lightningX = upstream.x + this.radius;
-                    var lightningY = upstream.y;
-                    ctx.beginPath();
-                    ctx.moveTo(lightningX * width, lightningY * height);
-                    while (lightningX < this.x - this.radius - DRAW_GAP - Math.max((upstream.conduction)/(upstream.time)*(this.x - upstream.x - 2*this.radius - DRAW_GAP), 0)) {
-                        lightningX += DRAW_LIGHTNING;
-                        if (lightningX > upstream.x + this.radius + DRAW_AXON)
-                            lightningY += (this.y - upstream.y)/(this.x - this.radius - DRAW_GAP - upstream.x)*DRAW_LIGHTNING;
-                        ctx.lineTo(lightningX * width, (lightningY + 0.02*Math.random() - 0.01) * height);
-                    }
-                    ctx.stroke();
-                
-                }
-            }
-        }
     }
 
 }
@@ -131,102 +93,43 @@ class ArtNeuron extends Neuron {
         this.conduction = 1;
         this.value = 0;
     }
-}
 
-var bio_neurons = [];
-
-// functions to determine how many channels to open
-function naChannel(neuron) {
-    let voltage = neuron.value;
-    // Na channels must be allowed to close at peak voltage and not reopen until voltage is below -55 mV
-    if (voltage < -55 || neuron.channels["na"][1] > 0) {
-        let setPoint = neuron.channels["na"][0] * sigmoid(voltage, 0.1, -45);
-        if (setPoint > 0.9)
-            neuron.channels["na"][1] = 0;
-        else
-            neuron.channels["na"][1] = neuron.channels["na"][0] * setPoint;
-    }
-}
-
-function kChannel(neuron) {
-    let voltage = neuron.value;
-    let setPoint = neuron.channels["k"][0] * sigmoid(voltage, 0.1, 30);
-    neuron.channels["k"][1] += neuron.channels["k"][0] * setPoint - neuron.channels["k"][1];
-}
-
-function ampa_open(synapse) {
-    let glutamate = synapse.pre.glutamate * (1 - synapse.reuptake);
-    let ampa_open_n =  synapse.receptors.ampa[0] * sigmoid(glutamate, 8, 0.5);
-    synapse.receptors.ampa[1] = Math.floor(ampa_open_n);
-}
-
-function nmda_open(synapse) {
-    let glutamate = synapse.pre.glutamate * (1 - synapse.reuptake);
-    let mg_block = sigmoid(synapse.post.value, 0.3, -60);
-    let nmda_open_n = synapse.receptors.nmda[0] * mg_block * sigmoid(glutamate, 8, 0.5);
-    synapse.receptors.nmda[1] = Math.floor(nmda_open_n);
-}
-
-function gabaa_open(synapse) {
-    let gaba = synapse.pre.gaba * (1 - synapse.reuptake);
-    let gabaa_open_n = synapse.receptors.gabaa[0] * sigmoid(gaba, 8, 0.5);
-    synapse.receptors.gabaa[1] = Math.floor(gabaa_open_n);
-}
-
-// extracellular ion concentrations
-const EC_NA = 140; // mM
-const EC_K = 5;
-const EC_CL = 120;
-const EC_CA = 2;
-// intracellular ion concentrations
-const IC_NA = 15;
-const IC_K = 150;
-const IC_CL = 5;
-const IC_CA = 0;
-
-class BioNeuron extends Neuron {
-    constructor(x, y) {
-        super(bio_neurons, 5, 3, x, y);
-        // axon 1mm, 150 m/s for full myelination -> 6 µs conduction
-        // 100 µs diffusion -> 3 ticks diffusion
-        // max speed: 150 m/s (1 tick conduction)
-        // min speed: 30 m/s (5 tick diffusion)
-        // https://www.physiologyweb.com/calculators/diffusion_time_calculator.html
-
-        this.value = -70;
-        this.na = IC_NA;
-        this.k = IC_K;
-        this.cl = IC_CL;
-        this.ca = IC_CA;
-
-        this.glutamate = 0;
-        this.gaba = 0;
-
-        this.channels = {"na": [50,0], "k": [20,0]}; // number of total/open channels in soma, not synapses
-    }
-
-    connect(neuron, ampar, nmdar, gabaar) {
-        this.synapses.push({"pre": this, "post": neuron, "calcium": 0, "reuptake": 1,
-            "receptors": {"ampa": [ampar,0], "nmda": [nmdar,0], "gabaa": [gabaar,0]}});
-    }
-
-    turn() {
-
-        // ion transporters
-
-        // Na+/K+/ATPase
-        let atpase = Math.max(0, 3*(this.na - IC_NA) + 2*(IC_K - this.k));
-        this.na -= 0.3*atpase;
-        this.k += 0.2*atpase;
-
-        // Na+/Ca2+ exchanger
-        let ncx = Math.max(0, 3*(IC_NA - this.na) + (this.ca - IC_CA));
-        this.na += 0.3*ncx;
-        this.ca -= 0.1*ncx;
-
-        // chloride channels?
-        let clc = Math.max(0, this.cl - IC_CL);
-        this.cl -= 0.1*clc;
+    draw(ctx, width, height) {
+        ctx.fillStyle = colormap2(this.value, -1, 0, 1);
+        ctx.lineWidth = 10.0/Math.sqrt(this.time);
+        ctx.beginPath();
+        ctx.arc(this.x * width, this.y * height, this.radius * width, 0, 2*Math.PI);
+        ctx.fill();
+        if (this.drawAxon) {
+            for (var i = 0; i < this.synapses.length; i++) {
+                let upstream = this.synapses[i].neuron;
+                ctx.strokeStyle = colormap2(this.synapses[i].strength, -1, 0, 1);
+                ctx.beginPath();
+                ctx.moveTo((upstream.x + this.radius) * width, upstream.y * height);
+                ctx.lineTo((upstream.x + this.radius + DRAW_AXON) * width, upstream.y * height);
+                ctx.lineTo((this.x - this.radius - DRAW_GAP) * width, this.y * height);
+                ctx.stroke();
+            }
+            if (this.conducting) {
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#FFFF00";
+                for (var i = 0; i < this.synapses.length; i++) {
+                    let upstream = this.synapses[i].neuron;
+                    var lightningX = upstream.x + this.radius;
+                    var lightningY = upstream.y;
+                    ctx.beginPath();
+                    ctx.moveTo(lightningX * width, lightningY * height);
+                    while (lightningX < this.x - this.radius - DRAW_GAP - Math.max((upstream.conduction)/(upstream.time)*(this.x - upstream.x - 2*this.radius - DRAW_GAP), 0)) {
+                        lightningX += DRAW_LIGHTNING;
+                        if (lightningX > upstream.x + this.radius + DRAW_AXON)
+                            lightningY += (this.y - upstream.y)/(this.x - this.radius - DRAW_GAP - upstream.x)*DRAW_LIGHTNING;
+                        ctx.lineTo(lightningX * width, (lightningY + 0.02*Math.random() - 0.01) * height);
+                    }
+                    ctx.stroke();
+                
+                }
+            }
+        }
     }
 }
 
@@ -406,8 +309,6 @@ function runANNSample(input) {
     }
 }
 
-
-
 function runANN() {
     input = [];
     for (var i = 0; i < 28*28; i++)
@@ -415,10 +316,169 @@ function runANN() {
     runANNSample(input, [1,0,1,0,1,0,1,0,1,0]);
 }
 
+var bio_neurons = [];
+
+// functions to determine how many channels to open
+
+// voltage-gated channels in the soma
+function naChannel(neuron) {
+    let voltage = neuron.value;
+    // Na channels must be allowed to close at peak voltage and not reopen until voltage is below -55 mV
+    if (voltage < -55 || neuron.channels["na"][1] > 0) {
+        let setPoint = neuron.channels["na"][0] * sigmoid(voltage, 0.3, -45);
+        if (neuron.value > 30)
+            neuron.channels["na"][1] = 0;
+        else
+            neuron.channels["na"][1] = neuron.channels["na"][0] * setPoint;
+    }
+}
+
+function kChannel(neuron) {
+    let voltage = neuron.value;
+    let setPoint = neuron.channels["k"][0] * sigmoid(voltage, 0.3, 30);
+    neuron.channels["k"][1] += 0.1 * (neuron.channels["k"][0] * setPoint - neuron.channels["k"][1]);
+}
+
+// ligand-gated channels
+function ampa_open(synapse) {
+    let glutamate = synapse.pre.glutamate * (1 - synapse.reuptake);
+    let ampa_open_n =  synapse.receptors.ampa[0] * sigmoid(glutamate, 8, 0.5);
+    synapse.receptors.ampa[1] = Math.floor(ampa_open_n);
+}
+
+function nmda_open(synapse) {
+    let glutamate = synapse.pre.glutamate * (1 - synapse.reuptake);
+    let mg_block = sigmoid(synapse.post.value, 0.3, -60);
+    let nmda_open_n = synapse.receptors.nmda[0] * mg_block * sigmoid(glutamate, 8, 0.5);
+    synapse.receptors.nmda[1] = Math.floor(nmda_open_n);
+}
+
+function gabaa_open(synapse) {
+    let gaba = synapse.pre.gaba * (1 - synapse.reuptake);
+    let gabaa_open_n = synapse.receptors.gabaa[0] * sigmoid(gaba, 8, 0.5);
+    synapse.receptors.gabaa[1] = Math.floor(gabaa_open_n);
+}
+
+// extracellular ion concentrations
+const EC_NA = 140; // mM
+const EC_K = 5;
+const EC_CL = 120;
+const EC_CA = 2;
+// intracellular ion concentrations
+const IC_NA = 15;
+const IC_K = 150;
+const IC_CL = 5;
+const IC_CA = 0;
+
+class BioNeuron extends Neuron {
+    constructor(x, y) {
+        super(bio_neurons, 5, 3, x, y);
+        // axon 1mm, 150 m/s for full myelination -> 6 µs conduction
+        // 100 µs diffusion -> 3 ticks diffusion
+        // max speed: 150 m/s (1 tick conduction)
+        // min speed: 30 m/s (5 tick diffusion)
+        // https://www.physiologyweb.com/calculators/diffusion_time_calculator.html
+
+        this.value = -70;
+
+        // relative permeability to each ion
+        this.na = 1;
+        this.k = 22;
+        this.cl = 0;
+        this.ca = 0;
+
+        this.glutamate = 0;
+        this.gaba = 0;
+
+        this.channels = {"na": [200,0], "k": [80,0]}; // number of total/open channels in soma, not synapses
+    }
+
+    connect(neuron, ampar, nmdar, gabaar) {
+        this.synapses.push({"pre": neuron, "post": this, "calcium": 0, "reuptake": 1,
+            "receptors": {"ampa": [ampar,0], "nmda": [nmdar,0], "gabaa": [gabaar,0]}});
+    }
+
+    turn() {
+
+        let setNa = 0;
+        let setK = 0;
+        let setCl = 0;
+        let setCa = 0;
+
+        // voltage-gated ion channels
+
+        naChannel(this);
+        setNa += this.channels.na[1];
+        setNa = Math.min(this.channels.na[0], setNa + 1);
+
+        kChannel(this);
+        setK += this.channels.k[1];
+        setK = Math.min(this.channels.k[0], setK + 22); // K is 22 times more permeable than Na by default
+
+        // ligand-gated ion channels
+        for (var i = 0; i < this.synapses.length; i++) {
+            let synapse = this.synapses[i];
+
+            ampa_open(synapse);
+            setNa += synapse.receptors.ampa[1];
+
+            nmda_open(synapse);
+            setCa += synapse.receptors.nmda[1];
+
+            gabaa_open(synapse);
+            setCl += synapse.receptors.gabaa[1];
+        }
+
+        // allow channels to open and close based on set points
+        this.na += Math.floor(0.05 * (setNa - this.na));
+        this.k += Math.floor(0.005 * (setK - this.k));
+        this.cl += Math.floor(0.05 * (setCl - this.cl));
+        this.ca += Math.floor(0.03 * (setCa - this.ca));
+
+        // membrane potential
+        let top_sum = this.k*EC_K + this.na*EC_NA + this.cl*IC_CL + this.ca*EC_CA*EC_CA;
+        let bottom_sum = this.k*IC_K + this.na*IC_NA + this.cl*EC_CL + this.ca*IC_CA*IC_CA;
+        this.value = 62.0 * Math.log10(top_sum / bottom_sum);
+
+        // action potential
+        if (this.value > -55 && !this.conducting) {
+            this.conducting = true;
+        }
+        if (this.value < -55 && this.conducting) {
+            this.conducting = false;
+        }
+    }
+
+    draw(ctx, width, height) {
+        ctx.fillStyle = colormap2(this.value, -90, -55, 0);
+        ctx.lineWidth = 10.0/Math.sqrt(this.time);
+        ctx.beginPath();
+        ctx.arc(this.x * width, this.y * height, this.radius * width, 0, 2*Math.PI);
+        ctx.fill();
+    }
+}
+
+new BioNeuron(0.5, 0.5);
+
+var set_na = 1;
+function debug_bioNeuron() {
+    bio_neurons[0].na = set_na;
+    bio_neurons[0].turn();
+    console.log(bio_neurons[0].value);
+}
+
+setInterval(debug_bioNeuron, 500);
+
+
 function drawDiagram() {
     var ctx = canvas1.getContext('2d');
     ctx.fillStyle = "#444444";
     ctx.fillRect(0, 0, canvas1.width, canvas1.height);
+    for (var i = 0; i < bio_neurons.length; i++) {
+        bio_neurons[i].draw(ctx, canvas1.width, canvas1.height);
+        //bio_neurons[i].turn();
+    }
+
     ctx = canvas2.getContext('2d');
     ctx.fillStyle = "#444444";
     ctx.fillRect(0, 0, canvas2.width, canvas2.height);
