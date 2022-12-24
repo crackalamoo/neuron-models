@@ -33,8 +33,7 @@ const DRAW_GAP = 0.005;
 const DRAW_AXON = 0.02;
 const DRAW_LIGHTNING = 0.005;
 class Neuron {
-    constructor(arr, time, time2, x, y, func, radius=DRAW_RADIUS, drawAxon=true) {
-        this.func = func; // activation function
+    constructor(arr, time, time2, x, y, radius=DRAW_RADIUS, drawAxon=true) {
         this.value = 0;
         this.synapses = []; // dendrites for ANN, axons for biological
         this.bias = 0;
@@ -89,6 +88,10 @@ class Neuron {
 
 }
 
+function sigmoid(x, a, b) {
+    return 1.0/(1 + Math.exp(-a*(x-b)));
+}
+
 var art_neurons = [];
 function relu(x) {
     //return 1.0/(1 + Math.exp(-x));
@@ -102,7 +105,8 @@ function relu_deriv(y) {
 
 class ArtNeuron extends Neuron {
     constructor(x, y, layer, index, radius, drawAxon) {
-        super(art_neurons, 1, 0, x, y, relu, radius, drawAxon);
+        super(art_neurons, 1, 0, x, y, radius, drawAxon);
+        this.func = relu;
         this.layer = layer;
         this.index = index;
         this.deriv = relu_deriv;
@@ -130,12 +134,43 @@ class ArtNeuron extends Neuron {
 }
 
 var bio_neurons = [];
-function membrane_func(x) {
-    let voltage = x - 70;
-    let threshold = -55;
-    if (voltage >= threshold)
-        return 1;
-    return 0;
+
+// functions to determine how many channels to open
+function naChannel(neuron) {
+    let voltage = neuron.value;
+    // Na channels must be allowed to close at peak voltage and not reopen until voltage is below -55 mV
+    if (voltage < -55 || neuron.channels["na"][1] > 0) {
+        let setPoint = neuron.channels["na"][0] * sigmoid(voltage, 0.1, -45);
+        if (setPoint > 0.9)
+            neuron.channels["na"][1] = 0;
+        else
+            neuron.channels["na"][1] = neuron.channels["na"][0] * setPoint;
+    }
+}
+
+function kChannel(neuron) {
+    let voltage = neuron.value;
+    let setPoint = neuron.channels["k"][0] * sigmoid(voltage, 0.1, 30);
+    neuron.channels["k"][1] += neuron.channels["k"][0] * setPoint - neuron.channels["k"][1];
+}
+
+function ampa_open(synapse) {
+    let glutamate = synapse.pre.glutamate * (1 - synapse.reuptake);
+    let ampa_open_n =  synapse.receptors.ampa[0] * sigmoid(glutamate, 8, 0.5);
+    synapse.receptors.ampa[1] = Math.floor(ampa_open_n);
+}
+
+function nmda_open(synapse) {
+    let glutamate = synapse.pre.glutamate * (1 - synapse.reuptake);
+    let mg_block = sigmoid(synapse.post.value, 0.3, -60);
+    let nmda_open_n = synapse.receptors.nmda[0] * mg_block * sigmoid(glutamate, 8, 0.5);
+    synapse.receptors.nmda[1] = Math.floor(nmda_open_n);
+}
+
+function gabaa_open(synapse) {
+    let gaba = synapse.pre.gaba * (1 - synapse.reuptake);
+    let gabaa_open_n = synapse.receptors.gabaa[0] * sigmoid(gaba, 8, 0.5);
+    synapse.receptors.gabaa[1] = Math.floor(gabaa_open_n);
 }
 
 const EC_NA = 140; // mM
@@ -145,7 +180,7 @@ const EC_CA = 2;
 
 class BioNeuron extends Neuron {
     constructor(x, y) {
-        super(bio_neurons, 5, 3, x, y, membrane_func);
+        super(bio_neurons, 5, 3, x, y);
         // axon 1mm, 150 m/s for full myelination -> 6 µs conduction
         // 100 µs diffusion -> 3 ticks diffusion
         // max speed: 150 m/s (1 tick conduction)
@@ -161,11 +196,15 @@ class BioNeuron extends Neuron {
         this.glutamate = 0;
         this.gaba = 0;
 
-        this.receptors = []; // is this the best model? should this be synapse-specific?
+        this.channels = {"na": [50,0], "k": [20,0]}; // number of total/open channels in soma, not synapses
     }
 
-    connect(neuron) {
-        this.synapses.push({"neuron": neuron, "calcium": 0, "reuptake": 1});
+    connect(neuron, ampar, nmdar, gabaar) {
+        this.synapses.push({"pre": this, "post": neuron, "calcium": 0, "reuptake": 1,
+            "receptors": {"ampa": [ampar,0], "nmda": [nmdar,0], "gabaa": [gabaar,0]}});
+    }
+
+    turn() {
     }
 }
 
