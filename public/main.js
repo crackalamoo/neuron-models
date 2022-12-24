@@ -323,9 +323,9 @@ var bio_neurons = [];
 // voltage-gated channels in the soma
 function naChannel(neuron) {
     let voltage = neuron.value;
-    // Na channels must be allowed to close at peak voltage and not reopen until voltage is below -55 mV
-    if (voltage < -55 || neuron.channels["na"][1] > 0) {
-        let setPoint = neuron.channels["na"][0] * sigmoid(voltage, 0.3, -45);
+    // Na channels must be allowed to close at peak voltage and not reopen until voltage is below -65 mV
+    if (voltage < -65 || neuron.channels["na"][1] > 0) {
+        let setPoint = sigmoid(voltage, 0.5, -50.5); // values chosen so that threshold will be near -55 mV
         if (neuron.value > 30)
             neuron.channels["na"][1] = 0;
         else
@@ -335,7 +335,7 @@ function naChannel(neuron) {
 
 function kChannel(neuron) {
     let voltage = neuron.value;
-    let setPoint = neuron.channels["k"][0] * sigmoid(voltage, 0.3, 30);
+    let setPoint = sigmoid(voltage, 0.3, 35);
     neuron.channels["k"][1] += 0.1 * (neuron.channels["k"][0] * setPoint - neuron.channels["k"][1]);
 }
 
@@ -382,19 +382,23 @@ class BioNeuron extends Neuron {
         this.value = -70;
 
         // relative permeability to each ion
-        this.na = 1;
-        this.k = 22;
+        this.na = 2;
+        this.k = 44;
         this.cl = 0;
         this.ca = 0;
 
         this.glutamate = 0;
         this.gaba = 0;
 
-        this.channels = {"na": [200,0], "k": [80,0]}; // number of total/open channels in soma, not synapses
+        this.axons = []; // alternative lookup form for this.synapses (which records dendrites)
+
+        this.channels = {"na": [300,0], "k": [200,0]}; // relative number of total/open channels in soma, not synapses
     }
 
     connect(neuron, ampar, nmdar, gabaar) {
         this.synapses.push({"pre": neuron, "post": this, "calcium": 0, "reuptake": 1,
+            "receptors": {"ampa": [ampar,0], "nmda": [nmdar,0], "gabaa": [gabaar,0]}});
+        neuron.axons.push({"pre": neuron, "post": this, "calcium": 0, "reuptake": 1,
             "receptors": {"ampa": [ampar,0], "nmda": [nmdar,0], "gabaa": [gabaar,0]}});
     }
 
@@ -409,11 +413,13 @@ class BioNeuron extends Neuron {
 
         naChannel(this);
         setNa += this.channels.na[1];
-        setNa = Math.min(this.channels.na[0], setNa + 1);
 
         kChannel(this);
         setK += this.channels.k[1];
-        setK = Math.min(this.channels.k[0], setK + 22); // K is 22 times more permeable than Na by default
+
+        // leak channels
+        setNa += 2;
+        setK += 44; // K is 22 times more permeable than Na by default
 
         // ligand-gated ion channels
         for (var i = 0; i < this.synapses.length; i++) {
@@ -430,10 +436,10 @@ class BioNeuron extends Neuron {
         }
 
         // allow channels to open and close based on set points
-        this.na += Math.floor(0.05 * (setNa - this.na));
-        this.k += Math.floor(0.005 * (setK - this.k));
-        this.cl += Math.floor(0.05 * (setCl - this.cl));
-        this.ca += Math.floor(0.03 * (setCa - this.ca));
+        this.na += 0.05 * (setNa - this.na);
+        this.k += 0.02 * (setK - this.k);
+        this.cl += 0.05 * (setCl - this.cl);
+        this.ca += 0.03 * (setCa - this.ca);
 
         // membrane potential
         let top_sum = this.k*EC_K + this.na*EC_NA + this.cl*IC_CL + this.ca*EC_CA*EC_CA;
@@ -447,10 +453,12 @@ class BioNeuron extends Neuron {
         if (this.value < -55 && this.conducting) {
             this.conducting = false;
         }
+
+        // add code for when synapse reaches the end
     }
 
     draw(ctx, width, height) {
-        ctx.fillStyle = colormap2(this.value, -90, -55, 0);
+        ctx.fillStyle = colormap2(this.value, -70, -56, 0);
         ctx.lineWidth = 10.0/Math.sqrt(this.time);
         ctx.beginPath();
         ctx.arc(this.x * width, this.y * height, this.radius * width, 0, 2*Math.PI);
@@ -460,14 +468,17 @@ class BioNeuron extends Neuron {
 
 new BioNeuron(0.5, 0.5);
 
-var set_na = 1;
-function debug_bioNeuron() {
-    bio_neurons[0].na = set_na;
+function run_bioNeuron() {
+    bio_neurons[0].turn();
+}
+
+function setVal(val) {
+    bio_neurons[0].value = val;
     bio_neurons[0].turn();
     console.log(bio_neurons[0].value);
 }
 
-setInterval(debug_bioNeuron, 500);
+setInterval(run_bioNeuron, 5);
 
 
 function drawDiagram() {
