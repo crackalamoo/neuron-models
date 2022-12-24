@@ -173,10 +173,16 @@ function gabaa_open(synapse) {
     synapse.receptors.gabaa[1] = Math.floor(gabaa_open_n);
 }
 
+// extracellular ion concentrations
 const EC_NA = 140; // mM
 const EC_K = 5;
 const EC_CL = 120;
 const EC_CA = 2;
+// intracellular ion concentrations
+const IC_NA = 15;
+const IC_K = 150;
+const IC_CL = 5;
+const IC_CA = 0;
 
 class BioNeuron extends Neuron {
     constructor(x, y) {
@@ -188,10 +194,10 @@ class BioNeuron extends Neuron {
         // https://www.physiologyweb.com/calculators/diffusion_time_calculator.html
 
         this.value = -70;
-        this.na = 15;
-        this.k = 150;
-        this.cl = 5;
-        this.ca = 0;
+        this.na = IC_NA;
+        this.k = IC_K;
+        this.cl = IC_CL;
+        this.ca = IC_CA;
 
         this.glutamate = 0;
         this.gaba = 0;
@@ -205,6 +211,22 @@ class BioNeuron extends Neuron {
     }
 
     turn() {
+
+        // ion transporters
+
+        // Na+/K+/ATPase
+        let atpase = Math.max(0, 3*(this.na - IC_NA) + 2*(IC_K - this.k));
+        this.na -= 0.3*atpase;
+        this.k += 0.2*atpase;
+
+        // Na+/Ca2+ exchanger
+        let ncx = Math.max(0, 3*(IC_NA - this.na) + (this.ca - IC_CA));
+        this.na += 0.3*ncx;
+        this.ca -= 0.1*ncx;
+
+        // chloride channels?
+        let clc = Math.max(0, this.cl - IC_CL);
+        this.cl -= 0.1*clc;
     }
 }
 
