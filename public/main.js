@@ -165,7 +165,7 @@ function makeLayer(num_neurons, get_x, get_y, previous, rad=DRAW_RADIUS, drawAxo
 const LAYERS = 5;
 var lastLayer = makeLayer(28*28,
     (i => 0.5/LAYERS + (i%28)*0.01*5/8 - 0.05),
-    (i => Math.floor(i/28)*0.01 + 0.36), null, 0.005);
+    (i => Math.floor(i/28)*0.01 + 0.36), null, 0.004);
 lastLayer = makeLayer(20,
     (i => 1.5/LAYERS),
     (i => ((i%20)+0.5)/20), lastLayer, DRAW_RADIUS, false);
@@ -336,20 +336,20 @@ function kChannel(neuron) {
 // ligand-gated ion channels of the synapse
 function ampa_open(synapse) {
     let glutamate = synapse.pre.glutamate * (1 - synapse.reuptake);
-    let ampa_open_n =  synapse.receptors.ampa[0] * sigmoid(glutamate, 10, 0.5);
+    let ampa_open_n =  synapse.receptors.ampa[0] * sigmoid(glutamate, 10, 0.55);
     synapse.receptors.ampa[1] = ampa_open_n;
 }
 
 function nmda_open(synapse) {
     let glutamate = synapse.pre.glutamate * (1 - synapse.reuptake);
     let mg_block = sigmoid(synapse.post.value, 0.3, -60);
-    let nmda_open_n = synapse.receptors.nmda[0] * mg_block * sigmoid(glutamate, 10, 0.5);
+    let nmda_open_n = synapse.receptors.nmda[0] * mg_block * sigmoid(glutamate, 10, 0.55);
     synapse.receptors.nmda[1] = nmda_open_n;
 }
 
 function gabaa_open(synapse) {
     let gaba = synapse.pre.gaba * (1 - synapse.reuptake);
-    let gabaa_open_n = synapse.receptors.gabaa[0] * sigmoid(gaba, 10, 0.5);
+    let gabaa_open_n = synapse.receptors.gabaa[0] * sigmoid(gaba, 10, 0.55);
     synapse.receptors.gabaa[1] = gabaa_open_n;
 }
 
@@ -367,8 +367,8 @@ const IC_CA = 0;
 const DIFFUSION_TIME = 3;
 
 class BioNeuron extends Neuron {
-    constructor(x, y, glutamate=0, gaba=0) {
-        super(bio_neurons, 5, x, y);
+    constructor(x, y, glutamate=0, gaba=0, radius=DRAW_RADIUS, drawAxon=true) {
+        super(bio_neurons, 5, x, y, radius, drawAxon);
         this.id = bio_neurons.length - 1;
         // axon 1mm, 150 m/s for full myelination -> 6 µs conduction
         // 100 µs diffusion -> 3 ticks diffusion
@@ -478,7 +478,7 @@ class BioNeuron extends Neuron {
     }
 
     draw(ctx, width, height) {
-        ctx.fillStyle = colormap2(this.value, -72, -60, 0);
+        ctx.fillStyle = colormap2(this.value, -80, -68, 0);
         ctx.beginPath();
         ctx.arc(this.x * width, this.y * height, this.radius * width, 0, 2*Math.PI);
         ctx.fill();
@@ -515,9 +515,44 @@ class BioNeuron extends Neuron {
     }
 }
 
-new BioNeuron(0.45, 0.5);
-new BioNeuron(0.55, 0.5);
-bio_neurons[1].connect(bio_neurons[0], 5, 5, 0, true);
+var rods = [];
+for (var i = 0; i < 28*28; i++) {
+    let neuron = new BioNeuron(0.5/LAYERS + (i%28)*0.01*5/8 - 0.05, Math.floor(i/28)*0.01 + 0.36, 1, 0, 0.004, false);
+    neuron.time = 10;
+    neuron.myelination = 5;
+    rods.push(neuron);
+}
+
+var visual_cortex = [];
+
+function find_rod(x, y) {
+    return rods[y*28 + x];
+}
+
+for (var p = 0; p < 8; p++) {
+    // pinwheel orientation columns
+    visual_cortex.push([]);
+    /*for (var i = 0; i < 26*26; i++) {
+        let neuron = new BioNeuron(0.25 + 0.05*p + 0.04*Math.random(), 0.1 + 0.8*Math.random(), 1, 0, 0.005);
+        neuron.connect(rods[i], 12, 12, 0);
+        visual_cortex[p].push(neuron);
+    }*/
+    for (var x = 0; x < 11; x++) {
+        for (var y = 0; y < 11; y++) {
+            let neuron = new BioNeuron(0.25 + 0.025*p + 0.01*Math.random(), 0.2 + 0.6*Math.random(), 1, 0, 0.005);
+            neuron.connect(find_rod(x*2+2,y*2+0), 2, 2, 0);
+            neuron.connect(find_rod(x*2+2,y*2+1), 3, 2, 0);
+            neuron.connect(find_rod(x*2+2,y*2+2), 3, 2, 0);
+            neuron.connect(find_rod(x*2+2,y*2+3), 3, 2, 0);
+            neuron.connect(find_rod(x*2+2,y*2+4), 2, 2, 0);
+            visual_cortex[p].push(neuron);
+        }
+    }
+}
+
+//new BioNeuron(0.45, 0.5);
+//new BioNeuron(0.55, 0.5);
+//bio_neurons[406].connect(bio_neurons[405], 10, 10, 0, true);
 
 const DEBUG_TURNS = 25;
 var debug_turns = 0;
@@ -526,7 +561,7 @@ function run_bioNeurons() {
         bio_neurons[i].turn();
     }
     if (debug_turns > 0) {
-        console.log(bio_neurons[0].conducting);
+        console.log(bio_neurons[0].ca);
         debug_turns--;
     }
 }
@@ -536,12 +571,15 @@ function setVal(val) {
     debug_turns = DEBUG_TURNS;
 }
 
-function setupPathway() {
-    bio_neurons[0].glutamate = 1;
-    bio_neurons[1].synapses[0].receptors["ampa"][0] = 10;
+function runBioSample(input) {
+    for (var i = 0; i < rods.length; i++) {
+        if (input[i] > 0.5) {
+            rods[i].value = -50;
+        }
+    }
 }
 
-setInterval(run_bioNeurons, 40);
+setInterval(run_bioNeurons, 100);
 
 
 function drawAnnDiagram() {

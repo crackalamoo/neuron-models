@@ -66,6 +66,10 @@ function fastMnist(digit, index) {
   checkANNOutput = digit;
   trainMiniBatch(batch);
 }
+function bioMnist(digit, index) {
+  input = getMnist(digit, index);
+  runBioSample(input);
+}
 </script>
 <script src="main.js"></script>
 <script>
