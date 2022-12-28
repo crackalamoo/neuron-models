@@ -320,7 +320,7 @@ function naChannel(neuron) {
     // Na channels must be allowed to close at peak voltage and not reopen until voltage is below -65 mV
     if (voltage < -65 || neuron.channels["na"][1] > 0) {
         let setPoint = sigmoid(voltage, 0.8, -50.5); // values chosen so that threshold will be near -55 mV
-        if (neuron.value > 30)
+        if (neuron.value > 25)
             neuron.channels["na"][1] = 0;
         else
             neuron.channels["na"][1] = neuron.channels["na"][0] * setPoint;
@@ -330,7 +330,7 @@ function naChannel(neuron) {
 function kChannel(neuron) {
     let voltage = neuron.value;
     let setPoint = sigmoid(voltage, 0.3, 35);
-    neuron.channels["k"][1] += 0.1 * (neuron.channels["k"][0] * setPoint - neuron.channels["k"][1]);
+    neuron.channels["k"][1] += 0.1 * (neuron.channels["k"][0] * setPoint - neuron.channels["k"][1]); // slow opening/closing compared to Na
 }
 
 // ligand-gated ion channels of the synapse
@@ -365,6 +365,7 @@ const IC_CL = 5;
 const IC_CA = 0;
 
 const DIFFUSION_TIME = 3;
+const REUPTAKE = 0.3;
 
 class BioNeuron extends Neuron {
     constructor(x, y, glutamate=0, gaba=0, radius=DRAW_RADIUS, drawAxon=true) {
@@ -390,10 +391,10 @@ class BioNeuron extends Neuron {
         this.channels = {"na": [300,0], "k": [200,0]}; // relative number of total/open channels in soma, not synapses
     }
 
-    connect(neuron, ampar, nmdar, gabaar, setTime=false) {
+    connect(neuron, ampar, nmdar, gabaar, setTime=false, reuptake_speed=1) {
         this.presynaptic[neuron.id] = this.synapses.length;
         neuron.postsynaptic.push(this);
-        this.synapses.push({"pre": neuron, "post": this, "ca": 0, "reuptake": 1,
+        this.synapses.push({"pre": neuron, "post": this, "ca": 0, "reuptake": 1, "reuptake_speed": REUPTAKE * reuptake_speed,
             "receptors": {"ampa": [ampar,0], "nmda": [nmdar,0], "gabaa": [gabaar,0]}});
         if (setTime) {
             neuron.time = 150 * Math.sqrt(Math.pow(neuron.x - this.x, 2) + Math.pow(neuron.y - this.y, 2));
@@ -422,13 +423,16 @@ class BioNeuron extends Neuron {
             let synapse = this.synapses[i];
 
             // reuptake
-            synapse.reuptake += 0.4 * (1 - synapse.reuptake);
+            synapse.reuptake += synapse.reuptake_speed * (1 - synapse.reuptake);
 
             // ligand-gated ion channels
             ampa_open(synapse);
             setNa += synapse.receptors.ampa[1];
+            setK += 0.3*synapse.receptors.ampa[1];
 
             nmda_open(synapse);
+            setNa += synapse.receptors.nmda[1];
+            setK += 0.3*synapse.receptors.nmda[1];
             setCa += synapse.receptors.nmda[1];
 
             gabaa_open(synapse);
@@ -470,6 +474,10 @@ class BioNeuron extends Neuron {
                 this.conduction = 0;
             }
         }
+    }
+
+    plasticAmpa() {
+        return this.ca; // calcium triggers plasticity of AMPA receptors
     }
 
     draw(ctx, width, height) {
@@ -539,41 +547,38 @@ for (var p = 0; p < PINWHEEL.length; p++) {
     // pinwheel orientation columns
     visual_cortex_1.push([]);
     let conv = PINWHEEL[p];
-    for (var x = 0; x < 12; x++) {
-        for (var y = 0; y < 12; y++) {
-            let neuron = new BioNeuron(0.25 + 0.04*p + 0.01*Math.random(), 0.2 + 0.5*Math.random(), 1, 0, 0.005);
-            neuron.connect(find_rod(x*2+1+conv[0][0], y*2+1+conv[0][1]), 7, 3, 0);
-            neuron.connect(find_rod(x*2+1+conv[1][0], y*2+1+conv[1][1]), 4, 5, 0);
-            neuron.connect(find_rod(x*2+1+conv[2][0], y*2+1+conv[2][1]), 4, 5, 0);
+    for (var x = 2; x < 24; x++) {
+        for (var y = 2; y < 24; y++) {
+            let glutamate = Math.cbrt((Math.random() - 0.5)/4.0) + 0.5;
+            let neuron = new BioNeuron(0.25 + 0.04*p + 0.02*Math.random(), 0.2 + 0.7*Math.random(), glutamate, 1.0 - glutamate, 0.005);
+            neuron.connect(find_rod(x+1+conv[0][0], y+1+conv[0][1]), 5, 0, 0);
+            neuron.connect(find_rod(x+1+conv[1][0], y+1+conv[1][1]), 1, 5, 0);
+            neuron.connect(find_rod(x+1+conv[2][0], y+1+conv[2][1]), 1, 5, 0);
             neuron.myelination = 10;
             visual_cortex_1[p].push(neuron);
         }
     }
 }
 
-var visual_cortex_2 = [];
+/* var visual_cortex_2 = [];
 
 for (var p = 0; p < PINWHEEL.length; p++) {
     visual_cortex_2.push([]);
-    let conv = PINWHEEL[p];
-    for (var x = 1; x < 9; x++) {
-        for (var y = 1; y < 9; y++) {
+    //let conv = PINWHEEL[p];
+    for (var x = 1; x < 25; x += 2) {
+        for (var y = 1; y < 25; y += 2) {
             let glutamate = Math.cbrt((Math.random() - 0.5)/4.0) + 0.5;
             let neuron = new BioNeuron(0.25 + 0.13*Math.random(), 0.75 + 0.05*p + 0.01*Math.random(), glutamate, 1.0 - glutamate, 0.005);
-            neuron.connect(visual_cortex_1[p][(y+1) + (x+1)*12], 7, 3, 0, true);
-            neuron.connect(visual_cortex_1[p][(y+2) + (x+1)*12], 7, 3, 0, true);
-            neuron.connect(visual_cortex_1[p][(y+0) + (x+1)*12], 7, 3, 0, true);
-            neuron.connect(visual_cortex_1[p][(y+1) + (x+2)*12], 7, 3, 0, true);
-            neuron.connect(visual_cortex_1[p][(y+1) + (x+0)*12], 7, 3, 0, true);
-            /* neuron.connect(visual_cortex_1[p][(y+1+conv[1][1]) + (x+1+conv[1][0])*12], 7, 4, 0, true);
-            neuron.connect(visual_cortex_1[p][(y+1+conv[2][1]) + (x+1+conv[2][0])*12], 7, 4, 0, true);
-            neuron.connect(visual_cortex_1[p][(y+1+2*conv[1][1]) + (x+1+2*conv[1][0])*12], 6, 4, 0, true);
-            neuron.connect(visual_cortex_1[p][(y+1+2*conv[2][1]) + (x+1+2*conv[2][0])*12], 6, 4, 0, true); */
+            neuron.connect(visual_cortex_1[p][(y+1) + (x+1)*26], 3, 2, 0, true);
+            neuron.connect(visual_cortex_1[p][(y+2) + (x+1)*26], 3, 2, 0, true);
+            neuron.connect(visual_cortex_1[p][(y+0) + (x+1)*26], 3, 2, 0, true);
+            neuron.connect(visual_cortex_1[p][(y+1) + (x+2)*26], 3, 2, 0, true);
+            neuron.connect(visual_cortex_1[p][(y+1) + (x+0)*26], 3, 2, 0, true);
             neuron.myelination = 12 + Math.floor(5*Math.random());
             visual_cortex_2[p].push(neuron);
         }
     }
-}
+} */
 
 
 var p_temporal = [];
@@ -581,36 +586,41 @@ for (var i = 0; i < 160; i++) {
     let glutamate = Math.cbrt((Math.random() - 0.5)/4.0) + 0.5;
     let neuron = new BioNeuron(0.4 + 0.2*Math.random(), 0.5 + 0.4*Math.random(), glutamate, 1.0 - glutamate, 0.005);
     neuron.channels["na"][0] *= 0.88;
-    let connectivity = 10 + Math.floor(5*Math.random());
+    let connectivity = 10 + Math.floor(10*Math.random());
     for (var j = 0; j < connectivity; j++) {
-        let connect_to = visual_cortex_2[Math.floor(PINWHEEL.length * Math.random())][Math.floor(8*8*Math.random())];
+        let connect_to = visual_cortex_1[Math.floor(PINWHEEL.length * Math.random())][Math.floor(22*22*Math.random())];
         while (connect_to.postsynaptic.indexOf(neuron) != -1) {
-            connect_to = visual_cortex_2[Math.floor(PINWHEEL.length * Math.random())][Math.floor(8*8*Math.random())];
+            connect_to = visual_cortex_1[Math.floor(PINWHEEL.length * Math.random())][Math.floor(22*22*Math.random())];
         }
-        neuron.connect(connect_to, 40.0 / connectivity + Math.random(), 4, 80.0 / connectivity + Math.random(), true);
-    }
-    for (var j = 0; j < connectivity; j++) {
-        let connect_to = visual_cortex_1[Math.floor(PINWHEEL.length * Math.random())][Math.floor(12*12*Math.random())];
-        while (connect_to.postsynaptic.indexOf(neuron) != -1) {
-            connect_to = visual_cortex_1[Math.floor(PINWHEEL.length * Math.random())][Math.floor(12*12*Math.random())];
-        }
-        neuron.connect(connect_to, 30.0 / connectivity + Math.random(), 1, 0);
+        neuron.connect(connect_to, 80.0*connect_to.glutamate / connectivity + Math.random(), 1,
+            60.0*connect_to.gaba / connectivity + Math.random(), true);
     }
     neuron.myelination = 10 + Math.floor(3*Math.random());
     p_temporal.push(neuron);
 }
 
+for (var i = 0; i < 80; i++) {
+    let neuron = p_temporal[Math.floor(p_temporal.length * Math.random())];
+    for (var j = 0; j < 5; j++) {
+        let connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
+        while (connect_to.postsynaptic.indexOf(neuron) != -1 || connect_to.id == neuron.id) {
+            connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
+        }
+        neuron.connect(connect_to, 20.0*connect_to.glutamate, 3, 50.0*connect_to.gaba, true, Math.sqrt(connect_to.glutamate+0.4));
+    }
+}
+
 var a_temporal = [];
 for (var i = 0; i < 40; i++) {
-    let neuron = new BioNeuron(0.4 + 0.2*Math.random(), 0.2 + 0.29*Math.random(), 1, 0, 0.005);
-    neuron.glutamate = 1;
+    let glutamate = Math.cbrt((Math.random() - 0.5)/4.0) + 0.5;
+    let neuron = new BioNeuron(0.4 + 0.2*Math.random(), 0.2 + 0.29*Math.random(), glutamate, 1.0 - glutamate, 0.005);
     let connectivity = 10 + Math.floor(5*Math.random());
     for (var j = 0; j < connectivity; j++) {
         let connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
         while (connect_to.postsynaptic.indexOf(neuron) != -1) {
             connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
         }
-        neuron.connect(connect_to, 9, 5, 4, true);
+        neuron.connect(connect_to, 6*connect_to.glutamate, 6*connect_to.glutamate, 3*connect_to.gaba, true);
     }
     neuron.myelination = 10;
     a_temporal.push(neuron);
@@ -624,10 +634,10 @@ for (var i = 0; i < 10; i++) {
 
 var broca = [];
 for (var i = 0; i < 10; i++) {
-    let neuron = new BioNeuron(0.9, 0.2+i*0.075, 1, 0, 0.005);
-    for (var j = 0; j < 20; j++) {
+    let neuron = new BioNeuron(0.64 + 0.02*Math.random(), 0.2+i*0.075, 1, 0, 0.005);
+    for (var j = 0; j < 6; j++) {
         let connect_to = a_temporal[Math.floor(a_temporal.length * Math.random())];
-        while (connect_to.postsynaptic.indexOf(neuron) != -1) {
+        while (connect_to.postsynaptic.length > 6) {
             connect_to = a_temporal[Math.floor(a_temporal.length * Math.random())];
         }
         neuron.connect(connect_to, 5, 3, 0, true);
@@ -639,30 +649,35 @@ for (var i = 0; i < 10; i++) {
         }
         neuron.connect(connect_to, 5, 3, 1);
     }
-    neuron.myelination = 15;
+    neuron.myelination = 35;
     broca.push(neuron);
 }
 
-let stopSpeech = new BioNeuron(0.95, 0.5, 0, 1, 0.005);
-stopSpeech.myelination = 10;
+let stopSpeech = new BioNeuron(0.7, 0.5, 0, 1, 0.005);
+stopSpeech.myelination = 25;
 stopSpeech.channels["k"][0] *= 1.1;
-broca[4].connect(stopSpeech, 0, 0, 200, true);
+broca[4].connect(stopSpeech, 0, 0, 25, true, 0.01);
 for (var i = 0; i < 10; i++) {
     stopSpeech.connect(broca[i], 10, 5, 0, true);
     if (i != 4)
-        broca[i].connect(stopSpeech, 0, 0, 200);
+        broca[i].connect(stopSpeech, 0, 0, 25, false, 0.01);
 }
 
-let speechFeedback = new BioNeuron(0.94, 0.65, 1, 0, 0.005);
-for (var i = 0; i < 10; i++) {
-    speechFeedback.connect(broca[i], 10, 5, 0);
-}
-
-let speechFeedback2 = new BioNeuron(0.96, 0.55, 1, 0, 0.005);
+let speechFeedback = new BioNeuron(0.69, 0.65, 1, 1, 0.005);
+let speechFeedback2 = new BioNeuron(0.71, 0.55, 1, 0, 0.005);
 speechFeedback2.connect(speechFeedback, 15, 5, 0, true);
 stopSpeech.connect(speechFeedback2, 15, 5, 0);
 speechFeedback.myelination = 1;
-speechFeedback2.myelination = 5;
+speechFeedback2.myelination = 1;
+
+for (var i = 0; i < 10; i++) {
+    speechFeedback.connect(broca[i], 10, 5, 0);
+    broca[i].connect(speechFeedback, 0, 0, 15);
+}
+for (var i = 0; i < 160; i += 2) {
+    p_temporal[i].connect(speechFeedback, 0, 0, 25, false, 0.05);
+}
+
 
 
 const DEBUG_TURNS = 25;
@@ -696,7 +711,7 @@ var bioInterval;
 var runningBio = false;
 function startBioInterval() {
     clearInterval(bioInterval);
-    bioInterval = setInterval(run_bioNeurons, 100);
+    bioInterval = setInterval(run_bioNeurons, 150);
     runningBio = true;
 }
 function endBioInterval() {
