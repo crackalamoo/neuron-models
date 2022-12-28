@@ -592,7 +592,7 @@ for (var i = 0; i < 160; i++) {
         while (connect_to.postsynaptic.indexOf(neuron) != -1) {
             connect_to = visual_cortex_1[Math.floor(PINWHEEL.length * Math.random())][Math.floor(22*22*Math.random())];
         }
-        neuron.connect(connect_to, 80.0*connect_to.glutamate / connectivity + Math.random(), 1,
+        neuron.connect(connect_to, 85.0*connect_to.glutamate / connectivity + Math.random(), 1,
             60.0*connect_to.gaba / connectivity + Math.random(), true);
     }
     neuron.myelination = 10 + Math.floor(3*Math.random());
@@ -614,13 +614,13 @@ var a_temporal = [];
 for (var i = 0; i < 40; i++) {
     let glutamate = Math.cbrt((Math.random() - 0.5)/4.0) + 0.5;
     let neuron = new BioNeuron(0.4 + 0.2*Math.random(), 0.2 + 0.29*Math.random(), glutamate, 1.0 - glutamate, 0.005);
-    let connectivity = 10 + Math.floor(5*Math.random());
+    let connectivity = 8 + Math.floor(7*Math.random());
     for (var j = 0; j < connectivity; j++) {
         let connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
         while (connect_to.postsynaptic.indexOf(neuron) != -1) {
             connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
         }
-        neuron.connect(connect_to, 6*connect_to.glutamate, 6*connect_to.glutamate, 3*connect_to.gaba, true);
+        neuron.connect(connect_to, 7*connect_to.glutamate, 7*connect_to.glutamate, 3*connect_to.gaba, true);
     }
     neuron.myelination = 10;
     a_temporal.push(neuron);
@@ -660,22 +660,27 @@ broca[4].connect(stopSpeech, 0, 0, 25, true, 0.01);
 for (var i = 0; i < 10; i++) {
     stopSpeech.connect(broca[i], 10, 5, 0, true);
     if (i != 4)
-        broca[i].connect(stopSpeech, 0, 0, 25, false, 0.01);
+        broca[i].connect(stopSpeech, 0, 0, 25, false, 0.03);
 }
 
-let speechFeedback = new BioNeuron(0.69, 0.65, 1, 1, 0.005);
-let speechFeedback2 = new BioNeuron(0.71, 0.55, 1, 0, 0.005);
+let speechFeedback = new BioNeuron(0.62, 0.61, 1, 1, 0.005);
+let speechFeedback2 = new BioNeuron(0.71, 0.61, 1, 0, 0.005);
 speechFeedback2.connect(speechFeedback, 15, 5, 0, true);
 stopSpeech.connect(speechFeedback2, 15, 5, 0);
 speechFeedback.myelination = 1;
-speechFeedback2.myelination = 1;
+speechFeedback2.myelination = 0;
 
 for (var i = 0; i < 10; i++) {
     speechFeedback.connect(broca[i], 10, 5, 0);
     broca[i].connect(speechFeedback, 0, 0, 15);
 }
-for (var i = 0; i < 160; i += 2) {
-    p_temporal[i].connect(speechFeedback, 0, 0, 25, false, 0.05);
+for (var i = 0; i < p_temporal.length; i += 2) {
+    p_temporal[i].connect(speechFeedback, 0, 0, 25, false, 0.03);
+    p_temporal[i].connect(stopSpeech, 0, 0, 15, false, 0.03);
+}
+for (var i = 0; i < a_temporal.length; i += 2) {
+    a_temporal[i].connect(speechFeedback, 0, 0, 25, false, 0.03);
+    a_temporal[i].connect(stopSpeech, 0, 0, 15, false, 0.03);
 }
 
 
