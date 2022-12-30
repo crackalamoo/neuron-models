@@ -302,6 +302,7 @@ function runANNSample(input) {
     for (let i = 1; i < layers.length; i++) {
         window.setTimeout(function() { runANNLayer(i, 1000); }, (i-0.5) * 1500);
     }
+    window.setTimeout(function() {noANNControl = false;}, (layers.length+0.5) * 1500)
 }
 
 function runANN() {
@@ -464,15 +465,15 @@ class BioNeuron extends Neuron {
             setCl += synapse.receptors.gabaa[1];
 
             // neuroplasticity
-            if (this.plastic != 0) {
+            if (this.plastic != 0 && plasticFactor != 0) {
                 // Ca2+/NMDAR-based neuroplasticity of AMPAR
                 let calcium = synapse.receptors.nmda[1];
                 if (calcium > 0.1) {
                     let adj_ampa = ltp_ltd(calcium);
                     if (adj_ampa > 0)
-                        synapse.receptors.ampa[0] += (15 - synapse.receptors.ampa[0]) * adj_ampa * this.plastic;
+                        synapse.receptors.ampa[0] += (15 - synapse.receptors.ampa[0]) * adj_ampa * this.plastic * plasticFactor;
                     else
-                        synapse.receptors.ampa[0] -= (0 - synapse.receptors.ampa[0]) * adj_ampa * this.plastic;
+                        synapse.receptors.ampa[0] -= (0 - synapse.receptors.ampa[0]) * adj_ampa * this.plastic * plasticFactor;
                 }
             }
         }
@@ -623,7 +624,7 @@ for (var p = 0; p < PINWHEEL.length; p++) {
 
 
 var p_temporal = [];
-for (var i = 0; i < 160; i++) {
+for (var i = 0; i < 120; i++) {
     let glutamate = Math.cbrt((Math.random() - 0.5)/4.0) + 0.5;
     let neuron = new BioNeuron(0.4 + 0.2*Math.random(), 0.5 + 0.4*Math.random(), glutamate, 1.0 - glutamate, 0.005);
     neuron.channels["na"][0] *= 0.88;
@@ -640,7 +641,7 @@ for (var i = 0; i < 160; i++) {
     p_temporal.push(neuron);
 }
 
-for (var i = 0; i < 80; i++) {
+for (var i = 0; i < 60; i++) {
     let neuron = p_temporal[Math.floor(p_temporal.length * Math.random())];
     for (var j = 0; j < 5; j++) {
         let connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
@@ -651,7 +652,7 @@ for (var i = 0; i < 80; i++) {
     }
 }
 
-const TEMPORAL_PLASTICITY = 0.5;
+const TEMPORAL_PLASTICITY = 0.4;
 
 var a_temporal = [];
 for (var i = 0; i < 50; i++) {
@@ -682,7 +683,7 @@ function brocaFire(neuron) {
         bioOutput = broca.indexOf(neuron);
     }
 }
-const BROCA_PLASTICITY = 1.0;
+const BROCA_PLASTICITY = 0.5;
 
 var broca = [];
 for (var i = 0; i < 10; i++) {
@@ -694,7 +695,7 @@ for (var i = 0; i < 10; i++) {
         }
         neuron.connect(connect_to, 0, 6, 0, true);
     }
-    for (var j = 0; j < 20; j++) {
+    for (var j = 0; j < 30; j++) {
         let connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
         while (connect_to.postsynaptic.indexOf(neuron) != -1) {
             connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
