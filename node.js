@@ -3,8 +3,8 @@ const express = require("express"),
     mnist = require("mnist");
 
 const port = process.env.PORT || "3000";
-const html_dir = "/index.html"; // "/sub/projects/porridge/index.html"
-const js_dir = "public"; // "/sub/projects/porridge/public"
+const html_dir = "/index_node.html";
+const js_dir = "public";
 
 var app = express();
 

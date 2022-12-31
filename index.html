@@ -9,7 +9,7 @@
 <script type="text/javascript"
   src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
-<!-- <base href="http://harysdalvi.com/sub/projects/porridge/"> -->
+<base href="http://harysdalvi.com/sub/projects/porridge/">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-YPKKGJ4J3K"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -33,6 +33,18 @@
 </blockquote>
 
 <h2>Simulation</h2>
+<div id="load-mnist"><div class="clickButton" onclick="loadMnistData()">Load MNIST dataset</div>
+<p>Warning: this is extremely computationally intensive. You shouldn't do it unless you are on a
+  good computer, and even then, use Chrome.
+</p>
+</div>
+<script>
+if (!window.chrome) {
+  document.getElementById("load-mnist").innerHTML = "I didn't detect Google Chrome. Make sure to run this simulation on a good computer with Google Chrome, as it is very computationally intensive!";
+  document.getElementById("simulation").innerHTML = "";
+}
+</script>
+<div id="simulation">
 <h3>Artificial Neural Network</h3>
 <div class="clickButton" onclick="randomMnist(0)">0</div>
 <div class="clickButton" onclick="randomMnist(1)">1</div>
@@ -51,14 +63,15 @@
 <canvas id="artificial"></canvas>
 
 <h3>Biological Neural Network</h3>
+<p>Warning: very computationally intensive</p>
 <form name="bioControls" action="javascript:void(0);">
 <div class="clickButton" onclick="bioMnist(0, 10)">0</div>
 <div class="clickButton" onclick="bioMnist(1, 1)">1</div>
 <div class="clickButton" onclick="bioMnist(2, 0)">2</div>
-<div class="clickButton" onclick="bioMnist(3, 10)">3</div>
-<div class="clickButton" onclick="bioMnist(4, 5)">4</div>
+<div class="clickButton" onclick="bioMnist(3, 11)">3</div>
+<div class="clickButton" onclick="bioMnist(4, 4)">4</div>
 <div class="clickButton" onclick="bioMnist(5, 10)">5</div>
-<div class="clickButton" onclick="bioMnist(6, 10)">6</div>
+<div class="clickButton" onclick="bioMnist(6, 11)">6</div>
 <div class="clickButton" onclick="bioMnist(7, 10)">7</div>
 <div class="clickButton" onclick="bioMnist(8, 2)">8</div>
 <div class="clickButton" onclick="bioMnist(9, 10)">9</div>
@@ -71,9 +84,11 @@
 </form>
 <br>
 <canvas id="biological"></canvas>
+</div>
 
 <h2>Help</h2>
-<p>This is a simulation comparing artificial neural networks to biological neural networks using the MNIST dataset,
+<p>This is a simulation comparing artificial neural networks to biological neural networks using the MNIST dataset
+  [<a href="#ref" id="src13" data-cite="13"></a>],
 which is a collection of handwritten numbers.</p>
 <h3>Artificial Neural Network</h3>
 <p>Click on one of the digits to feed that digit into the neural network, or click Random to choose a random digit.
@@ -88,9 +103,9 @@ strengthened or weakened. It might take a few tries of training with a digit bef
 recognize it, and it can be difficult for the network to maintain many digits in its memory.</p>
 
 <h2>What Is This?</h2>
-<p>The MNIST dataset of handwritten digits is a classic dataset used as an introduction to artificial neural
-  networks (ANNs). This project is a result of me wondering whether a simulation of a biological neural
-  network (BNN) could be trained to recognize digits from the MNIST dataset. In the end, because the
+<p>The <strong>MNIST</strong> dataset of handwritten digits is a classic dataset used as an introduction to <strong>artificial neural
+  networks</strong> (ANNs). This project is a result of me wondering whether a biophysical simulation of a <strong>biological neural
+  network</strong> (BNN) could be trained to recognize digits from the MNIST dataset. In the end, because the
   BNN is so complicated and computationally heavy, it has a limited ability to learn in this implementation.
   I also had to restrict the dataset to one example per digit for the biological network for this reason.
   However, if you train it right, it might be able to distinguish a couple digits from each other.
@@ -99,26 +114,422 @@ recognize it, and it can be difficult for the network to maintain many digits in
   more sophisticated technology, so it sometimes gets digits wrong. However, I think the two networks
   together are a useful environment to think about the similarities, as well as differences,
   between the two kinds of neural networks.</p>
+<p>In all cases, orange represents a high value, blue represents a neutral value, and black represents a low value.
+  ANN neurons are color-coded by their output, and connections are color-coded by their weights. BNN neurons are
+  color-coded by their membrane potential, and connections are color-coded by the amount of glutamate versus
+  GABA in the presynaptic neuron. The thickness of BNN connections represents the degree of myelination.
+  (More on all that in the <a href="#technical">technical details</a> section.)
+</p>
+
+<h2>What I Learned</h2>
+<p>ANNs are often hailed as the next big thing in artificial intelligence (AI), and their ability
+  to learn a wide variety of tasks is truly impressive. Most recently, OpenAI's
+  <a href="https://chat.openai.com/chat" target="_blank">ChatGPT</a> is making headlines for
+  its ability to do everything from explaining scientific concepts to writing poetry
+  in various languages.
+</p>
+<p>
+  At the same time, we are learning more about the neural network in our
+  heads that lets us think about all this. As impressive as AI has become, it takes
+  between five and eight layers of ANN neurons to simulate just a single biological neuron
+  [<a href="#ref" id="src2" data-cite="2"></a>]. That leads to the question of how, or if, we
+  can incorporate insights from neuroscience to create better AI.
+</p>
+<p>Working on both ANNs and BNNs led me to see a lot of similarities between the approaches.
+  I think there is something fundamental about the idea of a neural network that is extremely
+  effective at encoding abstract information, which is why both AI and evolution
+  came across it as the best solution for complicated tasks.
+</p>
+<p>Both types of neural networks also suffer from some of the same problems.
+  Most notable is the fact that it can be very difficult to explain why
+  the neurons and there connections are set up the way they are. The
+  propagation of information through neurons, whether by linear algebra or biophysics,
+  is highly abstract compared to the tasks it attempts to accomplish, like
+  recognizing a handwritten digit. This makes explainability a core issue in AI
+  as well as neuroscience, as much of neuroscience is
+  explaining why BNNs work the way they do.
+</p>
+<p>On the other hand, I realized that the two types of neural networks are
+  more different than I initially thought. While forward propagation through
+  an ANN can be as simple as matrix multiplication and addition, forward propagation
+  through a BNN involves:
+  <ul>
+    <li>The flow of at least four separate ions</li>
+    <li>Various receptors with different behavior</li>
+    <li>Differing levels of myelination</li>
+    <li>Physical organization of the neurons in space</li>
+  </ul>
+  And that doesn't even include aspects of a BNN that I didn't
+  include in this simplified model, such as:
+  <ul>
+    <li>The physical location of dendrites</li>
+    <li>The many different types of neurotransmitters</li>
+    <li>Epigenetic changes in neurons</li>
+    <li>The role of glial cells</li>
+    <li>And many, many more complicated factors.</li>
+  </ul>
+</p>
+<p>If biological neurons are so much more complex than artificial ones,
+  why does the ANN model here perform better than the BNN one? There are
+  a few possible reasons.
+<ul>
+  <li>I would say the biggest by far is the fact that
+    when I designed my model here, I didn't have the benefit of <strong>billions of
+    years of evolution</strong> to make everything run perfectly. While a real human
+    brain is highly adaptable, it also has a lot of important fixed
+    structures that are common to all people such as the visual cortex
+    and the motor cortex. Each of these structures has been refined by
+    natural selection, and in my model I could only approximate their
+    functionality using my limited knowledge and the limited knowledge
+    of neuroscience at this stage.</li>
+  <li>Because of its simplicity, you can <strong>easily train the ANN on
+    hundreds of examples in a short time</strong>. With the way I designed the BNN here,
+    it takes a lot of time and computational power for the information to propagate through the
+    neural network, so it is less feasible to train it on many examples.</li>
+  <li>I may have some <strong>flaws in my biophysical model</strong>, like excluding important
+    parts of the complexity of real BNNs or poor choice of various parameters.</li>
+</ul>
+</p>
+<p>I would also like to note that unlike an ANN, a real human doesn't need hundreds of examples
+  to accurately recognize handwritten digits. This is probably due to a combination of
+  these factors.
+</p>
+
+<h2 id="technical">Technical Details</h2>
+<h3>ANN</h3>
+<p>These are the layers of the ANN:
+  <ol>
+    <li>28×28 (784-neuron) input layer</li>
+    <li>20-neuron Dense layer (ReLU)</li>
+    <li>16-neuron Dense layer (ReLU)</li>
+    <li>10-neuron Dense layer (ReLU)</li>
+    <li>10-neuron Dense output layer (softmax)</li>
+  </ol>
+</p>
+<p>A <strong>Dense layer</strong> is a layer where each neuron
+  is connected to each neuron of the previous layer with a certain
+  <strong>weight</strong> representing the strength of the connection.
+  Each neuron also has a <strong>bias</strong> that is added to
+  the inputs from the previous neurons. Finally, each neuron has
+  an <strong>activation function</strong> that determines the output
+  of the neuron.
+</p>
+<p>In this case, the activation function I used is called <strong>ReLU</strong>.
+  Mathematically, this function can be written as \(f(x) = \max(0, x)\).
+  In other words, positive numbers are kept as-is, while negative numbers
+  become zero.
+</p>
+<p>For example, consider a neuron with three inputs from the previous layer
+  as in this diagram.
+</p>
+<div class="endfloat">
+  <svg viewBox="0 0 100 100">
+    <circle cx="15" cy="50" r="10" stroke="green" stroke-width="2" fill="yellow"></circle>
+    <circle cx="15" cy="80" r="10" stroke="green" stroke-width="2" fill="yellow"></circle>
+    <circle cx="15" cy="20" r="10" stroke="green" stroke-width="2" fill="yellow"></circle>
+    <circle cx="85" cy="50" r="10" stroke="green" stroke-width="3" fill="yellow"></circle>
+    <text x="15" y="20" fill="blue" text-anchor="middle" dominant-baseline="middle" font-size="small">-1</text>
+    <text x="15" y="50" fill="blue" text-anchor="middle" dominant-baseline="middle" font-size="small">3</text>
+    <text x="15" y="80" fill="blue" text-anchor="middle" dominant-baseline="middle" font-size="small">2</text>
+    <line x1="25" y1="50" x2="75" y2="50" stroke="green"></line>
+    <line x1="25" y1="20" x2="75" y2="50" stroke="green"></line>
+    <line x1="25" y1="80" x2="75" y2="50" stroke="green"></line>
+    <text x="49" y="30" fill="blue" text-anchor="middle" dominant-baseline="middle" font-size="small">-2</text>
+    <text x="40" y="46" fill="blue" text-anchor="middle" dominant-baseline="middle" font-size="small">4</text>
+    <text x="49" y="72" fill="blue" text-anchor="middle" dominant-baseline="middle" font-size="small">-3</text>
+    <text x="85" y="70" fill="blue" text-anchor="middle" dominant-baseline="middle" font-size="small">b=-6</text>
+  </svg>
+  <p class="caption">Diagram of a neuron with three inputs</p>
+</div>
+<p>In this diagram, the values of the three input neurons are -1, 3, and 2. The
+  weights of the respective connections are -2, 4, and -3. The bias of
+  the output neuron is -6. To calculate the output, we first multiply the value of
+  each input neuron by the weight of its connection, and add the results together.
+  This is \((-1)(-2) + (3)(4) + (2)(-3) = 8\). Then we add the bias of the output
+  neuron. This is \(8 + (-6) = 2\). Finally, we apply the activation function.
+  Using the ReLU activation function, since this is a positive number, the output is just 2.
+  If we had a negative number, the output would be 0.
+</p>
+<p>In order to train an ANN, we must <strong>adjust the weights and biases</strong> so the
+  results can be as accurate as possible. This is done with some clever calculus. To implement it,
+  at first I tried copying various implementations online, but failed because they used useful features of
+  Python and Numpy that I didn't have on this page with JavaScript. In the end,
+  I directly implemented the calculus using an article by Grant Sanderson (3Blue1Brown) [<a href="#ref" id="src1" data-cite="1"></a>].
+  One of the most important ideas was that
+  $$\frac{\partial C_0}{\partial w^{(L)}} \propto a^{(L-1)}$$
+  where \(w^{(L)}\) is a weight in a particular layer, \(a^{(L-1)}\) is the activation of a neuron in the
+  previous layer, and \(C_0\) is the <strong>cost function</strong> which tells us how far off
+  the output is from what it should be. This equation is telling us that the more active an input neuron is,
+  the more the cost function changes with respect to the weight of that input neuron's connection.
+  If we want to reduce the cost function, and the neuron is very active, it will be important to adjust
+  this connection. This is related to <strong>Hebbian theory</strong> for BNNs, which says that <strong>&ldquo;neurons that
+  fire together wire together.&rdquo;</strong>
+</p>
+<h3>BNN</h3>
+<p>This is where things get very complicated.
+</p>
+<p>First, let's go over the four ions that I simulated in this model: [<a href="#ref" id="src4" data-cite="4"></a>]
+<ul>
+  <li>Na<sup>+</sup> (sodium): this is a positive ion that is more concentrated outside the cell. If you open sodium channels,
+    sodium will flow into the cell, increasing the voltage.</li>
+  <li>K<sup>+</sup> (potassium): this is a positive ion that is more concentrated inside the cell. If you open potassium channels,
+    potassium will flow out of the cell, decreasing the voltage.</li>
+  <li>Ca<sup>2+</sup> (calcium): this is a positive ion that is more concentrated outside the cell. If you open calcium channels,
+    calcium will flow into the cell, increasing the voltage.</li>
+  <li>Cl<sup>-</sup> (chloride): this is a negative ion that is more concentrated outside the cell. If you open chloride channels,
+    surprise! The voltage will not necessarily decrease. This is because the negative voltage inside the cell by default pushes
+    chloride out, balancing out the fact that there is more chloride outside the cell. However, if the voltage of the cell rises,
+    then chloride will in fact move into the cell. Overall, opening chloride channels <em>prevents</em> the voltage of the cell
+    from increasing.
+</ul>
+</p>
+<p>Now let's talk about an <strong>action potential</strong>. By default, the <strong>membrane potential</strong> of a neuron is
+  around -70 mV; in other words, the voltage inside the neuron is about 70 mV lower than outside. A neuron also has
+  sodium and potassium channels that are closed by default. Let's say that for some reason, the membrane potential increases to
+  -55 mV. This is called <strong>depolarization</strong> because the difference in voltage (polarity) across the cell membrane
+  is reduced. Depolarization causes sodium channels to open, which causes sodium to rush into the cell, depolarizing it even further.
+  When the voltage has increased enough, the sodium channels close and potassium channels open. This <strong>repolarizes</strong>
+  the cell and it returns to its resting state. This spike in voltage we just described is called an action potential,
+  and it is how a neuron sends a signal to other neurons [<a href="#ref" id="src3" data-cite="3"></a>]. Unlike the ReLU
+  function, which increases linearly with input, an action potential either occurs or does not. There is no in between.
+</p>
+
+<p>How can we determine the membrane potential of a cell? A starting point might be the <strong>Nernst equation</strong>:
+$$E = \frac{61 \ \text{mV}}{Z} \log_{10} \bigg( \frac{C_{\text{out}}}{C_{\text{in}}} \bigg)$$
+where \(E\) is the equilibrium potential for a particular ion, \(Z\) is the valence of the ion (+1 for sodium, +2 for calcium,
+-1 for chloride, etc.), and 61 mV is a constant based on the Boltzmann constant, the Faraday constant, and human body temperature.
+However, this is only for a single ion. How do we find the membrane potential given many ions?
+</p>
+
+<p>We can use the <strong>Goldman-Hodgkin-Katz equation</strong>, which weighs the Nernst potential for each ion using the
+  permeability of each ion [<a href="#ref" data-cite="4"></a>]. Since chloride is a negative ion, looking at the Nernst equation and log rules, we see that
+  the position of outside and inside concentration is swapped. I wasn't able to find a version of this equation with
+  calcium, but I used log rules and similar logic with chloride to make an educated guess. Here is the modified
+  equation that I used:
+<div class="longmath">$$E = (61 \ \text{mV}) \log_{10} \Bigg( \frac{P_\text{K}[\text{K}_\text{out}] + P_\text{Na}[\text{Na}_\text{out}]
++ P_\text{Cl}[\text{Cl}_\text{in}] + P_\text{Ca}[\text{Ca}_\text{out}]^{\frac{1}{2}}}{P_\text{K}[\text{K}_\text{in}] + P_\text{Na}[\text{Na}_\text{in}]
++ P_\text{Cl}[\text{Cl}_\text{out}] + P_\text{Ca}[\text{Ca}_\text{in}]^{\frac{1}{2}}} \Bigg)$$</div>
+where \(P_\text{A}\) is the permeability of each ion.</p>
+
+<h3>Signaling</h3>
+<p>We have just gone over the basics of how an action potential occurs. How does this lead to signaling
+  from one neuron to another? The action potential travels away from the cell body and down the <strong>axon</strong>.
+  The axon may have <strong>myelination</strong> which allows the action potential to travel faster. At the end,
+  the action potential
+  depolarizes <strong>synapses</strong> at the connections between neurons. The most common kind of synapse
+  is a chemical synapse, in which once depolarization occurs, the neuron sends <strong>neurotransmitters</strong>
+  across a gap to the next neuron. The neurotransmitters trigger receptors on the next neuron. [<a href="#ref" data-cite="4"></a>]
+  In this model,
+  I used two neurotransmitters and three receptors, although the actual brain has many more:
+  [<a href="#ref" id="src5" data-cite="5"></a>][<a href="#ref" id="src6" data-cite="6"></a>][<a href="#ref" id="src7" data-cite="7"></a>]
+  <ul>
+    <li>Glutamate (excitatory)
+      <ul>
+        <li>AMPA receptor (AMPA-R)
+          &mdash; Na<sup>+</sup> and K<sup>+</sup> channel
+        </li>
+        <li>NMDA receptor (NMDA-R)
+          &mdash; cation channel, notably including Ca<sup>2+</sup>. Blocked by
+          Mg<sup>2+</sup> unless the cell is sufficiently depolarized to
+          remove the block.
+        </li>
+      </ul>
+    </li>
+    <li>GABA (inhibitory)
+      <ul><li>GABA<sub>A</sub> receptor (GABA<sub>A</sub>-R)
+      &mdash; Cl<sup>-</sup> channel</li></ul>
+    </li>
+  </ul>
+These ion channels tend to have a sigmoid opening function [<a href="#ref" id="src8" data-cite="8"></a>]. This is a function
+of the form \(f(x) = \frac{1}{1 + \exp (a(x-b))}\).
+</p>
+<p>NMDA receptors are of particular importance for this project. This is because of their connection with
+  <strong>long-term potentiation</strong> (LTP), where the strength of a synapse increases over time, and
+  its counterpart, <strong>long-term depression</strong> (LTD). High levels of calcium in a synapse
+  with NMDA-R trigger an increase in AMPA-R, making that synapse more likely to cause an action potential
+  in the future [<a href="#ref" data-cite="6"></a>]. On the other hand, low levels of calcium
+  have the opposite effect [<a href="#ref" id="src9" data-cite="9"></a>]. This means that if two neurons are connected
+  and frequently fire together, the postsynaptic neuron will have a large influx of calcium due to the depolarization
+  and glutamate from the presynaptic neuron, which will increase AMPA-R and make the connection between the two
+  even stronger. Hence, &ldquo;neurons that fire together wire together.&rdquo;
+</p>
+
+<h3>Parts of the Brain</h3>
+<p>I also modeled my BNN off the way vision works. In particular, I used the
+  concept of <strong>retinotopy</strong>, where visual input from the retina can be mapped to
+  particular neurons based on location in the field of vision. I also used the mammalian
+  pinwheel structure, in which certain neurons in the <strong>visual cortex</strong> are
+  sensitive to certain orientations [<a href="#ref" id="src10" data-cite="10"></a>].
+  For example, one neuron might be sensitive to
+  horizontal lines, while another might be sensitive to diagonal lines. This concept
+  is similar to that of a <strong>convolutional neural network</strong> with ANNs,
+  which is a much more common and more effective solution for visual data than
+  the dense network I used here for simplicity.
+</p>
+<p>After passing through the visual cortex, one possibility of where the information
+  can go is through the <strong>ventral stream</strong>, which passes through the
+  <strong>temporal lobe</strong>. This stream allows the brain to recognize what object the eyes are seeing
+  [<a href="#ref" id="src11" data-cite="11"></a>].
+</p>
+<p>In addition to the visual cortex and temporal lobe, I simulated an extremely basic
+  version of <strong>Broca's area</strong> and <strong>Wernicke's area</strong>,
+  with just ten neurons each. These areas are specialized for producing and understanding
+  speech, respectively [<a href="#ref" id="src12" data-cite="12"></a>]. You can imagine
+  my model as someone seeing a number and then being asked to say the name of that
+  number. However, unlike the visual cortex, my versions of Broca's
+  and Wernicke's areas are not at all modeled off their real-life equivalents; this is just
+  a useful analogy between the output of this BNN and speech.
+</p>
+<p>Additionally, if Train is checked in my model, a signal is sent to the
+  neuron in Wernicke's area corresponding to the digit shown. This releases glutamate
+  across the synapse with the corresponding neuron in Broca's area, with relatively
+  few AMPA receptors but also unusually slow reuptake. This makes the correct neuron in
+  Broca's area more excitable, so it is more likely than the others to have an action potential,
+  which will then strengthen the pathways that led to its firing by Hebbian theory.
+  You can imagine the training as someone showing you a digit as well as telling you its name,
+  allowing you to easily form a connection between the two.
+</p>
+<p>Finally, I added a negative feedback loop connected to Broca's area. This makes it so that
+  once one neuron in Broca's area is fired (once the model &ldquo;says the name of a digit&rdquo;),
+  it fires a system that releases GABA with slow reuptake, preventing it from saying a different digit until it
+  receives new input. I don't think this is actually how Broca's area works; in fact, movement of the tongue
+  to produce speech is a very complicated action. But since you can't say multiple things at the same time,
+  I needed something like that to restrict the output of the BNN. Just in case multiple neurons in Broca's area
+  fire, I circle the first neuron that fired, or the neuron that should have fired if none do.
+</p>
+<p>At first, I connect my version of Broca's area to the temporal lobe with no AMPA receptors and a lot of
+  NMDA receptors. Because NMDA receptors require depolarization to remove the Mg<sup>2+</sup> block,
+  they will not fire without further stimulation. This further stimulation comes from Wernicke's area
+  during training mode, allowing the correct connections to strengthen by LTP.
+</p>
+
+<h2>Conclusion</h2>
+<p>Biological neural networks are far more complex than artificial ones. Although AI is advancing
+  at an incredible pace, I think that will remain the case for a long time. The amount of
+  computation that a human brain does is simply unfathomable.
+</p>
+<p>Should we adopt aspects of the complexity of biological neural networks into AI? Some
+  connections, like the similarity between the visual cortex and convolutional neural networks,
+  seem promising. The similarities between ANNs and BNNs are significant enough that development in one
+  field is likely to affect the other.
+</p>
+<p>However, I think it would be a mistake to blindly
+  adopt biological features into AI. The amazing complexity of the brain
+  is not well-adapted to computer hardware, as the limitations of this BNN simulation
+  show. Many things such as receptors and neurotransmitters make sense as physical
+  objects in the brain, but are extremely expensive to accurately simulate in the language
+  of computers and Boolean algebra.
+</p>
+<p>One idea from BNNs that might be promising in AI is the fact that BNNs
+  are more of a <em>network</em>. While ANNs are generally connected sequentially layer by layer,
+  BNNs are connected in a much more intricate fashion. Something like this is
+  already having some success in the AI world: many ANN models with skip connections,
+  in which data from one layer can skip over layers and directly reach another layer,
+  have become quite successful. Expanding on this idea might allow us to achieve
+  some of the useful complexity of BNNs while still keeping in mind that
+  we are building AI with microchips and transistors, not neurons and axons.
+</p>
+<p>Alan Turing said &ldquo;we are not interested in the fact that the brain has the
+  consistency of cold porridge.&rdquo; In other words, computers might be able to
+  think much like the brain does: despite the difference in physical medium, many computing
+  principles are the same. The brain is certainly an example of an incredible
+  amount of computing power packed into a reasonably small area without breaking the laws
+  of physics.
+  One day we might be able to replicate that with AI, or maybe have even more computing power.
+  But questions remain. Can we feasibly
+  create such computing power when it took evolution billions of years? And if we can,
+  should we?
+</p>
 
 <h2 id="ref">References</h2>
-<ol>
-<li><a href="https://www.3blue1brown.com/lessons/backpropagation-calculus">Backpropagation calculus</a>
+<p>The GitHub repository for this project is at <a href="http://github.com/crackalamoo/neuron-models" target="_blank">crackalamoo/neuron-models</a>.
+</p>
+<ol id="reflist">
+<li><a href="https://www.3blue1brown.com/lessons/backpropagation-calculus" target="_blank">Backpropagation calculus</a>
   (Grant Sanderson, 3Blue1Brown) <a href="#src1">^</a></li>
-</ol>
-<ol type="A">
-<li><a href="https://github.com/cazala/mnist">MNIST digits with node.js (github/cazala)</a></li>
+<li><a href="https://www.quantamagazine.org/how-computationally-complex-is-a-single-neuron-20210902/" target="_blank">How Computationally Complex Is a Single Neuron?</a>
+  (Allison Whitten, Quanta Magazine) <a href="#src2">^</a></li>
+<li><a href="http://pittmedneuro.com/actionpotentials.html" target="_blank">Action Potentials</a>
+  (Bill Yates, Pitt Medical Neuroscience, 2022) <a href="#src3">^</a></li>
+<li>Vander's Principles of Physiology (Widmaier, Raff, & Strang, 15<sup>th</sup> edition) <a href="#src4">^</a></li>
+<li>Huss, M., Wang, D., Trané, C. <i>et al.</i> An experimentally
+  constrained computational model of NMDA oscillations in lamprey CPG neurons</a>
+  <cite>J Comput Neurosci</cite> <b>25</b>, 108–121 (2008).
+  <a href="https://doi.org/10.1007/s10827-007-0067-1" target="_blank">https://doi.org/10.1007/s10827-007-0067-1</a>
+  <a href="#src5">^</a></li>
+<li>Yasunori Hayashi,
+  <a href="https://www.sciencedirect.com/science/article/pii/S0168010221001863" target="_blank">Molecular
+    mechanism of hippocampal long-term potentiation – Towards multiscale understanding of learning and memory</a>,
+  Neuroscience Research, Volume 175, 2022, Pages 3-15, ISSN 0168-0102,
+  <a href="https://doi.org/10.1016/j.neures.2021.08.001" target="_blank">https://doi.org/10.1016/j.neures.2021.08.001</a>.
+  <a href="#src6">^</a>
+</li>
+<li>Goetz T, Arslan A, Wisden W, Wulff P. <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2648504/" target="_blank">GABA<sub>A</sub>
+  receptors: structure and function in the basal ganglia</a>. Prog Brain Res. 2007;160:21-41.
+  doi: 10.1016/S0079-6123(06)60003-4. PMID: 17499107; PMCID: PMC2648504. <a href="#src7">^</a>
+</li>
+<li>Zhang XC, Yang H, Liu Z, Sun F. <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6276078/" target="_blank">Thermodynamics
+  of voltage-gated ion channels</a>.
+  Biophys Rep. 2018;4(6):300-319. doi: 10.1007/s41048-018-0074-y. Epub 2018 Nov 16. PMID: 30596139; PMCID: PMC6276078.
+  <a href="#src8">^</a></li>
+<li>Purves D, Augustine GJ, Fitzpatrick D, et al., editors. Neuroscience. 2nd edition. Sunderland (MA):
+  Sinauer Associates; 2001. Long-Term Synaptic Depression. Available from:
+  <a href="https://www.ncbi.nlm.nih.gov/books/NBK10899/" target="_blank">https://www.ncbi.nlm.nih.gov/books/NBK10899/</a>
+  <a href="#src9">^</a>
+</li>
+<li>Young JJ, Almasi A, Sun SH, et al. <a href="https://www.science.org/doi/abs/10.1126/sciadv.abn0954" target="_blank">Orientation
+  pinwheels in primary visual cortex of a highly visual marsupial</a>. Science Advances 2022
+  <a href="#src10">^</a>
+</li>
+<li><a href="https://nba.uth.tmc.edu/neuroscience/s2/chapter15.html" target="_blank">Visual Processing: Cortical Pathways</a>
+  (Valentin Dragoi, Ph.D., Department of Neurobiology and Anatomy, McGovern Medical School) <a href="#src11">^</a>
+</li>
+<li><a href="https://thebrain.mcgill.ca/flash/d/d_10/d_10_cr/d_10_cr_lan/d_10_cr_lan.html" target="_blank">Broca's
+  Area, Wernicke's Area, and Other Language-Processing Areas in the Brain</a>
+  (Bruno Dubuc, McGill University) <a href="#src12">^</a></li>
+<li><a href="https://github.com/cazala/mnist">MNIST digits with node.js (github/cazala)</a> <a href="#src13">^</a></li>
 </ol>
 
 
 <div id="footer"></div>
 <script src="http://harysdalvi.com/services.js"></script>
 <script>
-const mnist = <%- JSON.stringify(mnist) %>; // importing MNIST library from node.js
 var noANNControl = false;
 var plasticFactor = 1.0;
 
+function makeMnist(mnist_data) {
+  var make_mnist = [];
+  for (var i = 0; i < 10; i++) {
+    make_mnist.push([]);
+  }
+  for (var i = 0; i < mnist_data.length; i++) {
+    let digit = mnist_data[i].label;
+    let image = mnist_data[i].image;
+    for (var j = 0; j < image.length; j++) {
+      image[j] /= 255.0;
+    }
+    make_mnist[digit].push(mnist_data[i].image);
+  }
+  return make_mnist;
+}
+
+var mnist;
+
+document.getElementById("simulation").style.display = 'none';
+function loadMnistData() {
+  document.getElementById("load-mnist").innerHTML = "Loading...";
+  fetch('http://www.harysdalvi.com/sub/projects/porridge/mnist_handwritten_test.json')
+  .then((response) => response.json())
+  .then((data) => {
+    mnist = makeMnist(data);
+    document.getElementById("simulation").style.display = '';
+    document.getElementById("load-mnist").style.display = 'none';
+   })
+   .catch((error) => { document.getElementById("load-mnist").innerHTML = error; });
+}
+
 function getMnist(digit, index) {
-  return mnist[digit].raw.slice(index*28*28, (index+1)*28*28);
+  return mnist[digit][index];
 }
 function runMnist(digit, index) {
   if (!noANNControl) {
@@ -145,14 +556,14 @@ function setPlasticFactor() {
 const DARK = darkTheme();
 
 function whenResize() {
-  canvas1.width = window.innerWidth*0.8*SCALE;
-  canvas1.height = window.innerWidth*0.5*SCALE;
-  canvas1.style.width = ''+(window.innerWidth*0.8)+"px";
-  canvas1.style.height = ''+(window.innerWidth*0.5)+"px";
-  canvas2.width = window.innerWidth*0.8*SCALE;
-  canvas2.height = window.innerWidth*0.5*SCALE;
-  canvas2.style.width = ''+(window.innerWidth*0.8)+"px";
-  canvas2.style.height = ''+(window.innerWidth*0.5)+"px";
+  canvas1.width = document.body.clientWidth*0.8*SCALE;
+  canvas1.height = document.body.clientWidth*0.5*SCALE;
+  canvas1.style.width = ''+(document.body.clientWidth*0.8)+"px";
+  canvas1.style.height = ''+(document.body.clientWidth*0.5)+"px";
+  canvas2.width = document.body.clientWidth*0.8*SCALE;
+  canvas2.height = document.body.clientWidth*0.5*SCALE;
+  canvas2.style.width = ''+(document.body.clientWidth*0.8)+"px";
+  canvas2.style.height = ''+(document.body.clientWidth*0.5)+"px";
 }
 whenResize();
 window.addEventListener("resize", whenResize);
@@ -161,8 +572,9 @@ setInterval(drawAnnDiagram, 80);
 setInterval(drawBioDiagram, 80);
 
 setAnchors();
+orderCitations();
 
-const SAMPLES = 850; // max 863
+const SAMPLES = 800;
 
 function runEpoch() {
   if(!noANNControl) {
@@ -188,9 +600,10 @@ function randomMnist(digit=null) {
   runMnist(digit, index);
 }
 
+const BIO_DIGIT_INDEX = [10, 1, 0, 11, 4, 10, 11, 10, 10, 2, 10];
 function randomBioMnist() {
   let digit = Math.floor(Math.random()*10);
-  bioMnist(digit, 10);
+  bioMnist(digit, BIO_DIGIT_INDEX[digit]);
 }
 </script>
 

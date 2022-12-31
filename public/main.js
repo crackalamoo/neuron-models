@@ -2,12 +2,6 @@ const SCALE = 4.0
 var canvas1 = document.getElementById("biological");
 var canvas2 = document.getElementById("artificial");
 
-// https://github.com/cazala/mnist
-// https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4811948/
-// The Brain Learns in Unexpected Ways - Scientific American
-// https://www.nature.com/articles/nrn2575
-// https://www.ncbi.nlm.nih.gov/books/NBK2532/
-
 function colormap(x, min, max) {
     let val = Math.min(Math.max(x, min), max);
     let range = max - min;
@@ -443,7 +437,7 @@ class BioNeuron extends Neuron {
 
         // leak channels
         setNa += 2;
-        setK += 44; // K is 22 times more permeable than Na by default
+        setK += 48; // K is much more permeable than Na by default
 
         for (var i = 0; i < this.synapses.length; i++) {
             let synapse = this.synapses[i];
@@ -485,9 +479,9 @@ class BioNeuron extends Neuron {
         this.ca += 0.08 * (setCa - this.ca);
 
         // membrane potential
-        let top_sum = this.k*EC_K + this.na*EC_NA + this.cl*IC_CL + this.ca*EC_CA*EC_CA;
-        let bottom_sum = this.k*IC_K + this.na*IC_NA + this.cl*EC_CL + this.ca*IC_CA*IC_CA;
-        this.value = 62.0 * Math.log10(top_sum / bottom_sum);
+        let top_sum = this.k*EC_K + this.na*EC_NA + this.cl*IC_CL + this.ca*Math.sqrt(EC_CA);
+        let bottom_sum = this.k*IC_K + this.na*IC_NA + this.cl*EC_CL + this.ca*Math.sqrt(IC_CA);
+        this.value = 61.0 * Math.log10(top_sum / bottom_sum);
 
         // action potential
         if (this.value > 0 && !this.conducting && this.channels["na"][1] > 0) {
@@ -594,33 +588,13 @@ for (var p = 0; p < PINWHEEL.length; p++) {
             let glutamate = Math.cbrt((Math.random() - 0.5)/4.0) + 0.5;
             let neuron = new BioNeuron(0.25 + 0.04*p + 0.02*Math.random(), 0.2 + 0.7*Math.random(), glutamate, 1.0 - glutamate, 0.005);
             neuron.connect(find_rod(x+1+conv[0][0], y+1+conv[0][1]), 5, 0, 0);
-            neuron.connect(find_rod(x+1+conv[1][0], y+1+conv[1][1]), 1, 5, 0);
-            neuron.connect(find_rod(x+1+conv[2][0], y+1+conv[2][1]), 1, 5, 0);
+            neuron.connect(find_rod(x+1+conv[1][0], y+1+conv[1][1]), 1, 3, 0);
+            neuron.connect(find_rod(x+1+conv[2][0], y+1+conv[2][1]), 1, 3, 0);
             neuron.myelination = 10;
             visual_cortex_1[p].push(neuron);
         }
     }
 }
-
-/* var visual_cortex_2 = [];
-
-for (var p = 0; p < PINWHEEL.length; p++) {
-    visual_cortex_2.push([]);
-    //let conv = PINWHEEL[p];
-    for (var x = 1; x < 25; x += 2) {
-        for (var y = 1; y < 25; y += 2) {
-            let glutamate = Math.cbrt((Math.random() - 0.5)/4.0) + 0.5;
-            let neuron = new BioNeuron(0.25 + 0.13*Math.random(), 0.75 + 0.05*p + 0.01*Math.random(), glutamate, 1.0 - glutamate, 0.005);
-            neuron.connect(visual_cortex_1[p][(y+1) + (x+1)*26], 3, 2, 0, true);
-            neuron.connect(visual_cortex_1[p][(y+2) + (x+1)*26], 3, 2, 0, true);
-            neuron.connect(visual_cortex_1[p][(y+0) + (x+1)*26], 3, 2, 0, true);
-            neuron.connect(visual_cortex_1[p][(y+1) + (x+2)*26], 3, 2, 0, true);
-            neuron.connect(visual_cortex_1[p][(y+1) + (x+0)*26], 3, 2, 0, true);
-            neuron.myelination = 12 + Math.floor(5*Math.random());
-            visual_cortex_2[p].push(neuron);
-        }
-    }
-} */
 
 
 var p_temporal = [];
@@ -634,7 +608,7 @@ for (var i = 0; i < 120; i++) {
         while (connect_to.postsynaptic.indexOf(neuron) != -1) {
             connect_to = visual_cortex_1[Math.floor(PINWHEEL.length * Math.random())][Math.floor(22*22*Math.random())];
         }
-        neuron.connect(connect_to, (70.0+50*Math.random())*connect_to.glutamate / connectivity, 0,
+        neuron.connect(connect_to, (70.0+50*Math.random())*connect_to.glutamate / connectivity, 1,
             70.0*connect_to.gaba / connectivity + Math.random(), true);
     }
     neuron.myelination = 8 + Math.floor(3*Math.random());
@@ -648,7 +622,7 @@ for (var i = 0; i < 60; i++) {
         while (connect_to.postsynaptic.indexOf(neuron) != -1 || connect_to.id == neuron.id || neuron.postsynaptic.indexOf(connect_to) != -1) {
             connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
         }
-        neuron.connect(connect_to, 25.0*connect_to.glutamate, 3, 55.0*connect_to.gaba, true, Math.sqrt(connect_to.glutamate+0.4));
+        neuron.connect(connect_to, 30.0*connect_to.glutamate, 2, 55.0*connect_to.gaba, true, Math.sqrt(connect_to.glutamate+0.4));
     }
 }
 
@@ -664,7 +638,7 @@ for (var i = 0; i < 50; i++) {
         while (connect_to.postsynaptic.indexOf(neuron) != -1) {
             connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
         }
-        neuron.connect(connect_to, (2+4*Math.random())*connect_to.glutamate, 5*connect_to.glutamate, 3*connect_to.gaba, true);
+        neuron.connect(connect_to, (2+4*Math.random())*connect_to.glutamate, 2*connect_to.glutamate, 3*connect_to.gaba, true);
     }
     neuron.myelination = 10;
     a_temporal.push(neuron);
@@ -693,14 +667,14 @@ for (var i = 0; i < 10; i++) {
         while (connect_to.postsynaptic.length > 6) {
             connect_to = a_temporal[Math.floor(a_temporal.length * Math.random())];
         }
-        neuron.connect(connect_to, 0, 6, 0, true);
+        neuron.connect(connect_to, 0, 2, 0, true);
     }
     for (var j = 0; j < 30; j++) {
         let connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
         while (connect_to.postsynaptic.indexOf(neuron) != -1) {
             connect_to = p_temporal[Math.floor(p_temporal.length * Math.random())];
         }
-        neuron.connect(connect_to, 0, 6, 0);
+        neuron.connect(connect_to, 0, 2, 0);
     }
     neuron.connect(wernicke[i], 1.2, 0, 0, true, 0.01);
     neuron.myelination = 35;

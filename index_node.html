@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Cold Porridge</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" >
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<link rel="stylesheet" href="http://harysdalvi.com/main.css">
+<script type="text/javascript"
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+<!-- <base href="http://harysdalvi.com/sub/projects/porridge/"> -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YPKKGJ4J3K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-YPKKGJ4J3K');
+</script>
+</head>
+
+<body>
+<div class="main">
+
+<h1 class="title">Cold Porridge</h1>
+<h3 class="author"><a href="http://harysdalvi.com">Harys Dalvi</a></h3>
+<h3 class="date">December 2022</h3><br>
+
+<blockquote>
+  &ldquo;We are not interested in the fact that the brain has the consistency of cold porridge.&rdquo;<br>
+  &emsp; &mdash; Alan Turing
+</blockquote>
+
+<h2>Simulation</h2>
+<h3>Artificial Neural Network</h3>
+<div class="clickButton" onclick="randomMnist(0)">0</div>
+<div class="clickButton" onclick="randomMnist(1)">1</div>
+<div class="clickButton" onclick="randomMnist(2)">2</div>
+<div class="clickButton" onclick="randomMnist(3)">3</div>
+<div class="clickButton" onclick="randomMnist(4)">4</div>
+<div class="clickButton" onclick="randomMnist(5)">5</div>
+<div class="clickButton" onclick="randomMnist(6)">6</div>
+<div class="clickButton" onclick="randomMnist(7)">7</div>
+<div class="clickButton" onclick="randomMnist(8)">8</div>
+<div class="clickButton" onclick="randomMnist(9)">9</div>
+<div class="clickButton" onclick="randomMnist()">Random</div>
+<br>
+<div class="clickButton" onclick="runEpoch()">Train</div>
+<br><br>
+<canvas id="artificial"></canvas>
+
+<h3>Biological Neural Network</h3>
+<form name="bioControls" action="javascript:void(0);">
+<div class="clickButton" onclick="bioMnist(0, 10)">0</div>
+<div class="clickButton" onclick="bioMnist(1, 1)">1</div>
+<div class="clickButton" onclick="bioMnist(2, 0)">2</div>
+<div class="clickButton" onclick="bioMnist(3, 10)">3</div>
+<div class="clickButton" onclick="bioMnist(4, 5)">4</div>
+<div class="clickButton" onclick="bioMnist(5, 10)">5</div>
+<div class="clickButton" onclick="bioMnist(6, 10)">6</div>
+<div class="clickButton" onclick="bioMnist(7, 10)">7</div>
+<div class="clickButton" onclick="bioMnist(8, 2)">8</div>
+<div class="clickButton" onclick="bioMnist(9, 10)">9</div>
+<div class="clickButton" onclick="randomBioMnist()">Random</div>
+<br>
+<input type="checkbox" name="train" checked>
+<label for="train">Train</label><br>
+<input type="range" name="plastic" min="0" max="2" value="1" step="0.1" onchange="setPlasticFactor()"></input>
+<label for="plastic">Neuroplasticity</label>
+</form>
+<br>
+<canvas id="biological"></canvas>
+
+<h2>Help</h2>
+<p>This is a simulation comparing artificial neural networks to biological neural networks using the MNIST dataset,
+which is a collection of handwritten numbers.</p>
+<h3>Artificial Neural Network</h3>
+<p>Click on one of the digits to feed that digit into the neural network, or click Random to choose a random digit.
+By default, the network has not been trained, so it will guess randomly. Click Train to train the neural network
+for one epoch so it can make better predictions.</p>
+<h3>Biological Neural Network</h3>
+<p>Click on one of the digits to feed that digit into the neural network, or click Random to choose a random digit.
+Check Train to provide a stimulus letting the neural network know which digit it is so it can strengthen connections
+associated with guessing that digit. Uncheck Train to let the neural network guess the digit on its own, without outside
+stimulus. Adjust the Neuroplasticity slider to change how much the connections between neurons can be
+strengthened or weakened. It might take a few tries of training with a digit before the neural network can
+recognize it, and it can be difficult for the network to maintain many digits in its memory.</p>
+
+<h2>What Is This?</h2>
+<p>The MNIST dataset of handwritten digits is a classic dataset used as an introduction to artificial neural
+  networks (ANNs). This project is a result of me wondering whether a simulation of a biological neural
+  network (BNN) could be trained to recognize digits from the MNIST dataset. In the end, because the
+  BNN is so complicated and computationally heavy, it has a limited ability to learn in this implementation.
+  I also had to restrict the dataset to one example per digit for the biological network for this reason.
+  However, if you train it right, it might be able to distinguish a couple digits from each other.
+</p>
+<p>The ANN isn't perfect either; it uses a simple type of layer called a Dense layer without
+  more sophisticated technology, so it sometimes gets digits wrong. However, I think the two networks
+  together are a useful environment to think about the similarities, as well as differences,
+  between the two kinds of neural networks.</p>
+
+<h2 id="ref">References</h2>
+<ol>
+<li><a href="https://www.3blue1brown.com/lessons/backpropagation-calculus">Backpropagation calculus</a>
+  (Grant Sanderson, 3Blue1Brown) <a href="#src1">^</a></li>
+</ol>
+<ol type="A">
+<li><a href="https://github.com/cazala/mnist">MNIST digits with node.js (github/cazala)</a></li>
+</ol>
+
+
+<div id="footer"></div>
+<script src="http://harysdalvi.com/services.js"></script>
+<script>
+const mnist = <%- JSON.stringify(mnist) %>; // importing MNIST library from node.js
+var noANNControl = false;
+var plasticFactor = 1.0;
+
+function getMnist(digit, index) {
+  return mnist[digit].raw.slice(index*28*28, (index+1)*28*28);
+}
+function runMnist(digit, index) {
+  if (!noANNControl) {
+    noANNControl = true;
+    input = getMnist(digit, index);
+    checkANNOutput = digit;
+    runANNSample(input);
+  }
+}
+
+function bioMnist(digit, index) {
+  input = getMnist(digit, index);
+  checkBioOutput = digit;
+  let train = document.bioControls.train.checked;
+  runBioSample(input, train);
+}
+
+function setPlasticFactor() {
+  plasticFactor = new Number(document.bioControls.plastic.value);
+}
+</script>
+<script src="main.js"></script>
+<script>
+const DARK = darkTheme();
+
+function whenResize() {
+  canvas1.width = window.innerWidth*0.8*SCALE;
+  canvas1.height = window.innerWidth*0.5*SCALE;
+  canvas1.style.width = ''+(window.innerWidth*0.8)+"px";
+  canvas1.style.height = ''+(window.innerWidth*0.5)+"px";
+  canvas2.width = window.innerWidth*0.8*SCALE;
+  canvas2.height = window.innerWidth*0.5*SCALE;
+  canvas2.style.width = ''+(window.innerWidth*0.8)+"px";
+  canvas2.style.height = ''+(window.innerWidth*0.5)+"px";
+}
+whenResize();
+window.addEventListener("resize", whenResize);
+
+setInterval(drawAnnDiagram, 80);
+setInterval(drawBioDiagram, 80);
+
+setAnchors();
+
+const SAMPLES = 850; // max 863
+
+function runEpoch() {
+  if(!noANNControl) {
+    noANNControl = true;
+
+    for (var i = 0; i < SAMPLES; i++) {
+      let batch = [];
+      for (var j = 0; j <= 9; j++)
+        batch.push([getMnist(j, i), digitOutput(j)]);
+      trainMiniBatch(batch);
+    }
+    for (var i = 0; i < ann_neurons.length; i++)
+      ann_neurons[i].reset();
+    
+    noANNControl = false;
+  }
+}
+
+function randomMnist(digit=null) {
+  if (digit == null)
+    digit = Math.floor(Math.random()*10);
+  var index = SAMPLES + Math.floor(Math.random()*(mnist[digit].length - SAMPLES));
+  runMnist(digit, index);
+}
+
+function randomBioMnist() {
+  let digit = Math.floor(Math.random()*10);
+  bioMnist(digit, 10);
+}
+</script>
+
+</body>
+</html>
