@@ -9,7 +9,6 @@
 <script type="text/javascript"
   src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
-<base href="http://harysdalvi.com/sub/projects/porridge/">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-YPKKGJ4J3K"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -21,11 +20,13 @@
 </head>
 
 <body>
-<div class="main">
+<main class="main">
 
-<h1 class="title">Cold Porridge</h1>
-<h3 class="author"><a href="http://harysdalvi.com">Harys Dalvi</a></h3>
-<h3 class="date">December 2022</h3><br>
+<header class="page-intro">
+  <h1 class="title">Cold Porridge</h1>
+  <p class="author"><a href="http://harysdalvi.com">Harys Dalvi</a></p>
+  <p class="date">December 2022</p>
+</header>
 
 <blockquote>
   &ldquo;We are not interested in the fact that the brain has the consistency of cold porridge.&rdquo;<br>
@@ -33,7 +34,7 @@
 </blockquote>
 
 <h2>Simulation</h2>
-<div id="load-mnist"><div class="clickButton" onclick="loadMnistData()">Load MNIST dataset</div>
+<div id="load-mnist"><button onclick="loadMnistData()">Load MNIST dataset</button>
 <p>Warning: this is extremely computationally intensive. You shouldn't do it unless you are on a
   good computer, and even then, use Chrome.
 </p>
@@ -46,36 +47,36 @@ if (!window.chrome) {
 </script>
 <div id="simulation">
 <h3>Artificial Neural Network</h3>
-<div class="clickButton" onclick="randomMnist(0)">0</div>
-<div class="clickButton" onclick="randomMnist(1)">1</div>
-<div class="clickButton" onclick="randomMnist(2)">2</div>
-<div class="clickButton" onclick="randomMnist(3)">3</div>
-<div class="clickButton" onclick="randomMnist(4)">4</div>
-<div class="clickButton" onclick="randomMnist(5)">5</div>
-<div class="clickButton" onclick="randomMnist(6)">6</div>
-<div class="clickButton" onclick="randomMnist(7)">7</div>
-<div class="clickButton" onclick="randomMnist(8)">8</div>
-<div class="clickButton" onclick="randomMnist(9)">9</div>
-<div class="clickButton" onclick="randomMnist()">Random</div>
+<button onclick="randomMnist(0)">0</button>
+<button onclick="randomMnist(1)">1</button>
+<button onclick="randomMnist(2)">2</button>
+<button onclick="randomMnist(3)">3</button>
+<button onclick="randomMnist(4)">4</button>
+<button onclick="randomMnist(5)">5</button>
+<button onclick="randomMnist(6)">6</button>
+<button onclick="randomMnist(7)">7</button>
+<button onclick="randomMnist(8)">8</button>
+<button onclick="randomMnist(9)">9</button>
+<button onclick="randomMnist()">Random</button>
 <br>
-<div class="clickButton" onclick="runEpoch()">Train</div>
+<button onclick="runEpoch()">Train</button>
 <br><br>
 <canvas id="artificial"></canvas>
 
 <h3>Biological Neural Network</h3>
 <p>Warning: very computationally intensive</p>
 <form name="bioControls" action="javascript:void(0);">
-<div class="clickButton" onclick="bioMnist(0, 10)">0</div>
-<div class="clickButton" onclick="bioMnist(1, 1)">1</div>
-<div class="clickButton" onclick="bioMnist(2, 0)">2</div>
-<div class="clickButton" onclick="bioMnist(3, 11)">3</div>
-<div class="clickButton" onclick="bioMnist(4, 4)">4</div>
-<div class="clickButton" onclick="bioMnist(5, 10)">5</div>
-<div class="clickButton" onclick="bioMnist(6, 11)">6</div>
-<div class="clickButton" onclick="bioMnist(7, 10)">7</div>
-<div class="clickButton" onclick="bioMnist(8, 2)">8</div>
-<div class="clickButton" onclick="bioMnist(9, 10)">9</div>
-<div class="clickButton" onclick="randomBioMnist()">Random</div>
+<button onclick="bioMnist(0, 10)">0</button>
+<button onclick="bioMnist(1, 1)">1</button>
+<button onclick="bioMnist(2, 0)">2</button>
+<button onclick="bioMnist(3, 11)">3</button>
+<button onclick="bioMnist(4, 4)">4</button>
+<button onclick="bioMnist(5, 10)">5</button>
+<button onclick="bioMnist(6, 11)">6</button>
+<button onclick="bioMnist(7, 10)">7</button>
+<button onclick="bioMnist(8, 2)">8</button>
+<button onclick="bioMnist(9, 10)">9</button>
+<button onclick="randomBioMnist()">Random</button>
 <br>
 <input type="checkbox" name="train" checked>
 <label for="train">Train</label><br>
@@ -102,7 +103,7 @@ stimulus. Adjust the Neuroplasticity slider to change how much the connections b
 strengthened or weakened. It might take a few tries of training with a digit before the neural network can
 recognize it, and it can be difficult for the network to maintain many digits in its memory.</p>
 
-<h2>What Is This?</h2>
+<h2>What is this?</h2>
 <p>The <strong>MNIST</strong> dataset of handwritten digits is a classic dataset used as an introduction to <strong>artificial neural
   networks</strong> (ANNs). This project is a result of me wondering whether a biophysical simulation of a <strong>biological neural
   network</strong> (BNN) could be trained to recognize digits from the MNIST dataset. In the end, because the
@@ -222,7 +223,7 @@ recognize it, and it can be difficult for the network to maintain many digits in
 <p>For example, consider a neuron with three inputs from the previous layer
   as in this diagram.
 </p>
-<div class="endfloat">
+<figure class="endfloat">
   <svg viewBox="0 0 100 100">
     <circle cx="15" cy="50" r="10" stroke="green" stroke-width="2" fill="yellow"></circle>
     <circle cx="15" cy="80" r="10" stroke="green" stroke-width="2" fill="yellow"></circle>
@@ -239,8 +240,8 @@ recognize it, and it can be difficult for the network to maintain many digits in
     <text x="49" y="72" fill="blue" text-anchor="middle" dominant-baseline="middle" font-size="small">-3</text>
     <text x="85" y="70" fill="blue" text-anchor="middle" dominant-baseline="middle" font-size="small">b=-6</text>
   </svg>
-  <p class="caption">Diagram of a neuron with three inputs</p>
-</div>
+  <figcaption>Diagram of a neuron with three inputs</figcaption>
+</figure>
 <p>In this diagram, the values of the three input neurons are -1, 3, and 2. The
   weights of the respective connections are -2, 4, and -3. The bias of
   the output neuron is -6. To calculate the output, we first multiply the value of
@@ -305,11 +306,11 @@ However, this is only for a single ion. How do we find the membrane potential gi
   permeability of each ion [<a href="#ref" data-cite="4"></a>]. Since chloride is a negative ion, looking at the Nernst equation and log rules, we see that
   the position of outside and inside concentration is swapped. I wasn't able to find a version of this equation with
   calcium, but I used log rules and similar logic with chloride to make an educated guess. Here is the modified
-  equation that I used:
+  equation that I used:</p>
 <div class="longmath">$$E = (61 \ \text{mV}) \log_{10} \Bigg( \frac{P_\text{K}[\text{K}_\text{out}] + P_\text{Na}[\text{Na}_\text{out}]
 + P_\text{Cl}[\text{Cl}_\text{in}] + P_\text{Ca}[\text{Ca}_\text{out}]^{\frac{1}{2}}}{P_\text{K}[\text{K}_\text{in}] + P_\text{Na}[\text{Na}_\text{in}]
 + P_\text{Cl}[\text{Cl}_\text{out}] + P_\text{Ca}[\text{Ca}_\text{in}]^{\frac{1}{2}}} \Bigg)$$</div>
-where \(P_\text{A}\) is the permeability of each ion.</p>
+<p>where \(P_\text{A}\) is the permeability of each ion.</p>
 
 <h3>Signaling</h3>
 <p>We have just gone over the basics of how an action potential occurs. How does this lead to signaling
@@ -321,7 +322,7 @@ where \(P_\text{A}\) is the permeability of each ion.</p>
   across a gap to the next neuron. The neurotransmitters trigger receptors on the next neuron. [<a href="#ref" data-cite="4"></a>]
   In this model,
   I used two neurotransmitters and three receptors, although the actual brain has many more:
-  [<a href="#ref" id="src5" data-cite="5"></a>][<a href="#ref" id="src6" data-cite="6"></a>][<a href="#ref" id="src7" data-cite="7"></a>]
+  [<a href="#ref" id="src5" data-cite="5"></a>][<a href="#ref" id="src6" data-cite="6"></a>][<a href="#ref" id="src7" data-cite="7"></a>]</p>
   <ul>
     <li>Glutamate (excitatory)
       <ul>
@@ -340,7 +341,7 @@ where \(P_\text{A}\) is the permeability of each ion.</p>
       &mdash; Cl<sup>-</sup> channel</li></ul>
     </li>
   </ul>
-These ion channels tend to have a sigmoid opening function [<a href="#ref" id="src8" data-cite="8"></a>]. This is a function
+<p>These ion channels tend to have a sigmoid opening function [<a href="#ref" id="src8" data-cite="8"></a>]. This is a function
 of the form \(f(x) = \frac{1}{1 + \exp (a(x-b))}\).
 </p>
 <p>NMDA receptors are of particular importance for this project. This is because of their connection with
@@ -489,9 +490,9 @@ of the form \(f(x) = \frac{1}{1 + \exp (a(x-b))}\).
   (Bruno Dubuc, McGill University) <a href="#src12">^</a></li>
 <li><a href="https://github.com/cazala/mnist">MNIST digits with node.js (github/cazala)</a> <a href="#src13">^</a></li>
 </ol>
+</main>
 
-
-<div id="footer"></div>
+<footer id="footer"></footer>
 <script src="http://harysdalvi.com/services.js"></script>
 <script>
 var noANNControl = false;
@@ -551,7 +552,7 @@ function setPlasticFactor() {
   plasticFactor = new Number(document.bioControls.plastic.value);
 }
 </script>
-<script src="public/main.js"></script>
+<script src="./public/main.js"></script>
 <script>
 const DARK = darkTheme();
 

@@ -9,7 +9,6 @@
 <script type="text/javascript"
   src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
-<!-- <base href="http://harysdalvi.com/sub/projects/porridge/"> -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-YPKKGJ4J3K"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -21,11 +20,13 @@
 </head>
 
 <body>
-<div class="main">
+<main class="main">
 
-<h1 class="title">Cold Porridge</h1>
-<h3 class="author"><a href="http://harysdalvi.com">Harys Dalvi</a></h3>
-<h3 class="date">December 2022</h3><br>
+<header class="page-intro">
+  <h1 class="title">Cold Porridge</h1>
+  <p class="author"><a href="http://harysdalvi.com">Harys Dalvi</a></p>
+  <p class="date">December 2022</p>
+</header>
 
 <blockquote>
   &ldquo;We are not interested in the fact that the brain has the consistency of cold porridge.&rdquo;<br>
@@ -34,35 +35,35 @@
 
 <h2>Simulation</h2>
 <h3>Artificial Neural Network</h3>
-<div class="clickButton" onclick="randomMnist(0)">0</div>
-<div class="clickButton" onclick="randomMnist(1)">1</div>
-<div class="clickButton" onclick="randomMnist(2)">2</div>
-<div class="clickButton" onclick="randomMnist(3)">3</div>
-<div class="clickButton" onclick="randomMnist(4)">4</div>
-<div class="clickButton" onclick="randomMnist(5)">5</div>
-<div class="clickButton" onclick="randomMnist(6)">6</div>
-<div class="clickButton" onclick="randomMnist(7)">7</div>
-<div class="clickButton" onclick="randomMnist(8)">8</div>
-<div class="clickButton" onclick="randomMnist(9)">9</div>
-<div class="clickButton" onclick="randomMnist()">Random</div>
+<button onclick="randomMnist(0)">0</button>
+<button onclick="randomMnist(1)">1</button>
+<button onclick="randomMnist(2)">2</button>
+<button onclick="randomMnist(3)">3</button>
+<button onclick="randomMnist(4)">4</button>
+<button onclick="randomMnist(5)">5</button>
+<button onclick="randomMnist(6)">6</button>
+<button onclick="randomMnist(7)">7</button>
+<button onclick="randomMnist(8)">8</button>
+<button onclick="randomMnist(9)">9</button>
+<button onclick="randomMnist()">Random</button>
 <br>
-<div class="clickButton" onclick="runEpoch()">Train</div>
+<button onclick="runEpoch()">Train</button>
 <br><br>
 <canvas id="artificial"></canvas>
 
 <h3>Biological Neural Network</h3>
 <form name="bioControls" action="javascript:void(0);">
-<div class="clickButton" onclick="bioMnist(0, 10)">0</div>
-<div class="clickButton" onclick="bioMnist(1, 1)">1</div>
-<div class="clickButton" onclick="bioMnist(2, 0)">2</div>
-<div class="clickButton" onclick="bioMnist(3, 10)">3</div>
-<div class="clickButton" onclick="bioMnist(4, 5)">4</div>
-<div class="clickButton" onclick="bioMnist(5, 10)">5</div>
-<div class="clickButton" onclick="bioMnist(6, 10)">6</div>
-<div class="clickButton" onclick="bioMnist(7, 10)">7</div>
-<div class="clickButton" onclick="bioMnist(8, 2)">8</div>
-<div class="clickButton" onclick="bioMnist(9, 10)">9</div>
-<div class="clickButton" onclick="randomBioMnist()">Random</div>
+<button onclick="bioMnist(0, 10)">0</button>
+<button onclick="bioMnist(1, 1)">1</button>
+<button onclick="bioMnist(2, 0)">2</button>
+<button onclick="bioMnist(3, 11)">3</button>
+<button onclick="bioMnist(4, 4)">4</button>
+<button onclick="bioMnist(5, 10)">5</button>
+<button onclick="bioMnist(6, 11)">6</button>
+<button onclick="bioMnist(7, 10)">7</button>
+<button onclick="bioMnist(8, 2)">8</button>
+<button onclick="bioMnist(9, 10)">9</button>
+<button onclick="randomBioMnist()">Random</button>
 <br>
 <input type="checkbox" name="train" checked>
 <label for="train">Train</label><br>
@@ -87,7 +88,7 @@ stimulus. Adjust the Neuroplasticity slider to change how much the connections b
 strengthened or weakened. It might take a few tries of training with a digit before the neural network can
 recognize it, and it can be difficult for the network to maintain many digits in its memory.</p>
 
-<h2>What Is This?</h2>
+<h2>What is this?</h2>
 <p>The MNIST dataset of handwritten digits is a classic dataset used as an introduction to artificial neural
   networks (ANNs). This project is a result of me wondering whether a simulation of a biological neural
   network (BNN) could be trained to recognize digits from the MNIST dataset. In the end, because the
@@ -108,9 +109,9 @@ recognize it, and it can be difficult for the network to maintain many digits in
 <ol type="A">
 <li><a href="https://github.com/cazala/mnist">MNIST digits with node.js (github/cazala)</a></li>
 </ol>
+</main>
 
-
-<div id="footer"></div>
+<footer id="footer"></footer>
 <script src="http://harysdalvi.com/services.js"></script>
 <script>
 const mnist = <%- JSON.stringify(mnist) %>; // importing MNIST library from node.js
@@ -140,7 +141,7 @@ function setPlasticFactor() {
   plasticFactor = new Number(document.bioControls.plastic.value);
 }
 </script>
-<script src="main.js"></script>
+<script src="./main.js"></script>
 <script>
 const DARK = darkTheme();
 
